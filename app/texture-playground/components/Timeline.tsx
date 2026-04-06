@@ -1,5 +1,6 @@
 // app/texture-playground/components/Timeline.tsx
 'use client'
+import { useState } from 'react'
 import type { Frame, BackgroundLayer, MidgroundLayer } from '../lib/types'
 
 type Props = {
@@ -14,13 +15,15 @@ type Props = {
   onPlay: () => void
   onStop: () => void
   onAddFrame: () => void
+  onReorderFrames: (fromId: string, toId: string) => void
 }
 
 export default function Timeline({
   frames, activeFrameId, fps, playing,
   onSelectFrame, onDeleteFrame, onDurationChange, onFpsChange,
-  onPlay, onStop, onAddFrame,
+  onPlay, onStop, onAddFrame, onReorderFrames,
 }: Props) {
+  const [dragOverId, setDragOverId] = useState<string | null>(null)
   return (
     <div style={{
       position: 'absolute', bottom: 18, left: '50%', transform: 'translateX(-50%)',
@@ -33,10 +36,17 @@ export default function Timeline({
       {frames.map((frame) => (
         <div key={frame.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
           <div
+            draggable={true}
+            onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('frameId', frame.id) }}
+            onDragOver={(e) => { e.preventDefault(); setDragOverId(frame.id) }}
+            onDragLeave={() => setDragOverId(null)}
+            onDragEnd={() => setDragOverId(null)}
+            onDrop={(e) => { e.preventDefault(); const fromId = e.dataTransfer.getData('frameId'); if (fromId !== frame.id) onReorderFrames(fromId, frame.id); setDragOverId(null) }}
             onClick={() => onSelectFrame(frame.id)}
             style={{
               width: 54, height: 54, borderRadius: 12, cursor: 'pointer',
               border: `1px solid ${activeFrameId === frame.id ? '#d1e043' : 'rgba(71,67,42,0.2)'}`,
+              outline: dragOverId === frame.id ? '2px solid #d1e043' : undefined,
               position: 'relative', flexShrink: 0, overflow: 'hidden',
               background: (frame.layers.find(l => l.kind === 'background') as BackgroundLayer | undefined)?.color ?? '#444625',
             }}

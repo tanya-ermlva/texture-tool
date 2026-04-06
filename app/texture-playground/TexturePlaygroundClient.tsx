@@ -188,6 +188,18 @@ export default function TexturePlaygroundClient() {
     })
   }
 
+  function handleReorderFrames(fromId: string, toId: string) {
+    setProject(p => {
+      const frames = [...p.frames]
+      const fromIdx = frames.findIndex(f => f.id === fromId)
+      const toIdx = frames.findIndex(f => f.id === toId)
+      if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return p
+      const [moved] = frames.splice(fromIdx, 1)
+      frames.splice(toIdx, 0, moved)
+      return { ...p, frames }
+    })
+  }
+
   function handleDurationChange(frameId: string, durationFrames: number) {
     setProject(p => ({
       ...p,
@@ -255,6 +267,7 @@ export default function TexturePlaygroundClient() {
           onPlay={() => setPlaying(true)}
           onStop={() => setPlaying(false)}
           onAddFrame={handleAddToTimeline}
+          onReorderFrames={handleReorderFrames}
         />
       </div>
     </div>
