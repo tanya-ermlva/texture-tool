@@ -1,6 +1,5 @@
 'use client'
-import { useRef, useState } from 'react'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { useRef, useState, useEffect } from 'react'
 import { nanoid } from 'nanoid'
 import type { Project, RendererAdapter, Layer, CompositionType, GridLayer, ImageLayer, MidgroundLayer, LayerOverride, Frame, FilterEntry, FilterType } from './lib/types'
 import CanvasPreview from './components/CanvasPreview'
@@ -10,12 +9,10 @@ import Timeline from './components/Timeline'
 import { resolveFrame } from './lib/resolve'
 import { usePlayback } from './lib/playback'
 import { exportWebMDeterministic, exportFramePng } from './lib/export'
-
-const geist = Geist({ subsets: ['latin'], variable: '--font-geist' })
-const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono' })
+import { useHistory } from './lib/useHistory'
 
 const DEFAULT_LAYERS: Layer[] = [
-  { id: 'bg',  kind: 'background',  color: '#444625' },
+  { id: 'bg',  kind: 'background',  color: '#ff92e0' },
   { id: 'mid', kind: 'midground',   src: null, label: '', opacity: 1, scale: 1, x: 0, y: 0 },
   { id: 'adj', kind: 'adjustment',  filters: [] },
 ]
@@ -30,7 +27,7 @@ const DEFAULT_PROJECT: Project = {
 }
 
 export default function TexturePlaygroundClient() {
-  const [project, setProject] = useState<Project>(DEFAULT_PROJECT)
+  const { state: project, set: setProject, undo, redo, canUndo, canRedo } = useHistory<Project>(DEFAULT_PROJECT)
   const adapterRef = useRef<RendererAdapter | null>(null)
   const [adapter, setAdapter] = useState<RendererAdapter | null>(null)
   const activeFrame = project.frames.find(f => f.id === project.activeFrameId) ?? project.frames[0]
@@ -39,6 +36,22 @@ export default function TexturePlaygroundClient() {
   const [exporting, setExporting] = useState(false)
   const [playing, setPlaying] = useState(false)
   usePlayback(adapter, project, playing, () => setPlaying(false))
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      const mod = e.metaKey || e.ctrlKey
+      if (!mod) return
+      if (e.key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        undo()
+      } else if (e.key === 'z' && e.shiftKey) {
+        e.preventDefault()
+        redo()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [undo, redo])
 
   function handleLayerChange(layerId: string, override: LayerOverride) {
     setProject(p => ({
@@ -150,6 +163,7 @@ export default function TexturePlaygroundClient() {
 
   function handleAddToTimeline() {
     setProject(p => {
+      if (p.frames.length >= 5) return p
       const currentFrame = p.frames.find(f => f.id === p.activeFrameId) ?? p.frames[0]
       const newFrame: Frame = {
         id: nanoid(6),
@@ -158,7 +172,7 @@ export default function TexturePlaygroundClient() {
       }
       return {
         ...p,
-        frames: [...p.frames.slice(0, 4), newFrame],
+        frames: [...p.frames, newFrame],
         activeFrameId: newFrame.id,
       }
     })
@@ -197,9 +211,7 @@ export default function TexturePlaygroundClient() {
 
   return (
     <div
-      className={`${geist.variable} ${geistMono.variable}`}
       style={{
-        fontFamily: 'var(--font-geist), system-ui, sans-serif',
         background: '#f2f2ec',
         height: '100vh',
         display: 'flex',
@@ -208,6 +220,7 @@ export default function TexturePlaygroundClient() {
     >
       <LeftPanel
         snapshot={snapshot}
+        outputSize={project.outputSize}
         onLayerChange={handleLayerChange}
         onAddGridLayer={() => handleAddGridLayer('dot-grid')}
         onAddFilter={handleAddFilter}
@@ -221,7 +234,6 @@ export default function TexturePlaygroundClient() {
           snapshot={snapshot}
           outputSize={project.outputSize}
           onAdapterReady={(a) => { adapterRef.current = a; setAdapter(a) }}
-          frameLabel={`${project.frames.indexOf(activeFrame) + 1}/${project.frames.length}`}
         />
         <TopBar
           outputSize={project.outputSize}
