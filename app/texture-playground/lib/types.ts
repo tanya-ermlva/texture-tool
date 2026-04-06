@@ -54,7 +54,7 @@ export type FilterType =
   | 'rgbsplit' | 'colormatrix' | 'halftone' | 'glow'
 
 export type FilterEntry =
-  | { type: 'noise';        enabled: boolean; intensity: number }
+  | { type: 'noise';        enabled: boolean; intensity: number; seed: number }
   | { type: 'blur';         enabled: boolean; strength: number }
   | { type: 'pixelate';     enabled: boolean; size: number }
   | { type: 'displacement'; enabled: boolean; scale: number }
@@ -70,6 +70,25 @@ export type AdjustmentLayer = {
 }
 
 export type Layer = BackgroundLayer | GridLayer | ImageLayer | MidgroundLayer | AdjustmentLayer
+
+// ── Serialisable types (for save/load, no File objects or blob URLs) ──────────
+
+// Serialisable form of ImageLayer — no File object, dataUrl instead of objectUrl
+export type SerializedImageLayer = Omit<ImageLayer, 'file' | 'objectUrl'> & { dataUrl: string }
+
+// Serialisable layer union
+export type SerializedLayer = BackgroundLayer | GridLayer | SerializedImageLayer | MidgroundLayer | AdjustmentLayer
+
+export type SerializedFrame = Omit<Frame, 'layers'> & { layers: SerializedLayer[] }
+
+export type SerializedProject = Omit<Project, 'frames'> & { frames: SerializedFrame[] }
+
+// Top-level JSON export format
+export type PresetFile = {
+  name: string
+  version: 1
+  project: SerializedProject
+}
 
 // Used by LayerControls onChange callbacks — partial properties to apply to a layer
 export type LayerOverride = Partial<Omit<GridLayer | BackgroundLayer | ImageLayer | MidgroundLayer, 'id' | 'kind' | 'file'>>
