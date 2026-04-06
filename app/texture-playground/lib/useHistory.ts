@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 
 interface HistoryState<T> {
   past: T[]
@@ -15,18 +15,18 @@ export function useHistory<T>(initial: T, maxSteps = 20) {
 
   // Used only to trigger re-renders
   const [, rerender] = useState(0)
-  const forceUpdate = () => rerender(n => n + 1)
+  const forceUpdate = useCallback(() => rerender(n => n + 1), [])
 
-  function set(next: T | ((prev: T) => T)) {
+  const set = useCallback((next: T | ((prev: T) => T)) => {
     const h = historyRef.current
     const nextValue = typeof next === 'function' ? (next as (prev: T) => T)(h.present) : next
     const newPast = [...h.past, h.present]
     if (newPast.length > maxSteps) newPast.splice(0, newPast.length - maxSteps)
     historyRef.current = { past: newPast, present: nextValue, future: [] }
     forceUpdate()
-  }
+  }, [])
 
-  function undo() {
+  const undo = useCallback(() => {
     const h = historyRef.current
     if (h.past.length === 0) return
     const prev = h.past[h.past.length - 1]
@@ -36,9 +36,9 @@ export function useHistory<T>(initial: T, maxSteps = 20) {
       future: [h.present, ...h.future],
     }
     forceUpdate()
-  }
+  }, [])
 
-  function redo() {
+  const redo = useCallback(() => {
     const h = historyRef.current
     if (h.future.length === 0) return
     const next = h.future[0]
@@ -48,7 +48,7 @@ export function useHistory<T>(initial: T, maxSteps = 20) {
       future: h.future.slice(1),
     }
     forceUpdate()
-  }
+  }, [])
 
   return {
     state: historyRef.current.present,
