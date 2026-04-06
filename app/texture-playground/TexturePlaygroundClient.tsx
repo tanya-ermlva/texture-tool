@@ -8,7 +8,7 @@ import TopBar from './components/TopBar'
 import Timeline from './components/Timeline'
 import { resolveFrame } from './lib/resolve'
 import { usePlayback } from './lib/playback'
-import { exportWebMDeterministic, exportFramePng } from './lib/export'
+import { exportWebMDeterministic, exportFramePng, exportMp4 } from './lib/export'
 import { useHistory } from './lib/useHistory'
 import { serializeProject, deserializeProject } from './lib/serialize'
 
@@ -240,6 +240,68 @@ export default function TexturePlaygroundClient() {
     }
   }
 
+  async function handleExportMp4() {
+    if (!adapterRef.current) return
+    setExporting(true)
+    try {
+      await exportMp4(adapterRef.current, project)
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const SHUFFLE_COLOURS = ['#444625', '#788d16', '#b2c349', '#e5eacd', '#ee9212', '#4791e2', '#ff92e0', '#a291ce']
+  const SHUFFLE_COMPOSITIONS: CompositionType[] = ['dot-grid', 'regular-grid', 'variable-grid', 'linear', 'layered', 'checkered']
+  const MIDGROUND_SRCS = Array.from({ length: 9 }, (_, i) => `/textures/midground/${i + 1}.png`)
+
+  function rnd(min: number, max: number) { return Math.random() * (max - min) + min }
+  function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)] }
+
+  function handleShuffle() {
+    setProject(p => {
+      const activeFrame = p.frames.find(f => f.id === p.activeFrameId) ?? p.frames[0]
+      const newLayers = activeFrame.layers.map((layer): Layer => {
+        if (layer.kind === 'background') return { ...layer, color: pick(SHUFFLE_COLOURS) }
+        if (layer.kind === 'grid') return {
+          ...layer,
+          composition: pick(SHUFFLE_COMPOSITIONS),
+          spacing: Math.round(rnd(8, 80)),
+          thickness: Math.round(rnd(0.5, 6) * 2) / 2,
+          dotSize: Math.round(rnd(1, 12) * 2) / 2,
+          opacity: Math.round(rnd(0.3, 1) * 100) / 100,
+          scale: Math.round(rnd(0.8, 2) * 100) / 100,
+        }
+        if (layer.kind === 'midground') return {
+          ...layer,
+          src: pick(MIDGROUND_SRCS),
+          label: String(MIDGROUND_SRCS.indexOf(pick(MIDGROUND_SRCS)) + 1),
+          opacity: Math.round(rnd(0.4, 1) * 100) / 100,
+          scale: Math.round(rnd(0.9, 1.5) * 100) / 100,
+          x: Math.round(rnd(-100, 100)),
+          y: Math.round(rnd(-100, 100)),
+        }
+        if (layer.kind === 'adjustment') return {
+          ...layer,
+          filters: layer.filters.map(fe => {
+            if (fe.type === 'noise') return { ...fe, intensity: Math.round(rnd(0.1, 0.8) * 10) / 10, seed: Math.random() }
+            if (fe.type === 'blur') return { ...fe, strength: Math.round(rnd(1, 10)) }
+            if (fe.type === 'pixelate') return { ...fe, size: Math.round(rnd(2, 20)) }
+            if (fe.type === 'displacement') return { ...fe, scale: Math.round(rnd(5, 80)) }
+            if (fe.type === 'rgbsplit') return { ...fe, amount: Math.round(rnd(1, 15)) }
+            return fe
+          }),
+        }
+        return layer
+      })
+      return {
+        ...p,
+        frames: p.frames.map(f =>
+          f.id !== p.activeFrameId ? f : { ...f, layers: newLayers }
+        ),
+      }
+    })
+  }
+
   return (
     <div
       style={{
@@ -273,6 +335,8 @@ export default function TexturePlaygroundClient() {
           onSizeChange={(s) => setProject(p => ({ ...p, outputSize: s }))}
           onExportFrame={handleExportFrame}
           onExportWebM={handleExportWebM}
+          onExportMp4={handleExportMp4}
+          onShuffle={handleShuffle}
           exporting={exporting}
         />
         <Timeline
