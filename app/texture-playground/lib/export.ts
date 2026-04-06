@@ -85,6 +85,52 @@ export async function exportWebMDeterministic(
   downloadBlob(new Blob([target.buffer], { type: 'video/webm' }), 'texture.webm')
 }
 
+// ── MP4 export (WebCodecs + mp4-muxer) ───────────────────────────────────────
+
+export async function exportMp4(
+  adapter: RendererAdapter,
+  project: Project,
+): Promise<void> {
+  const { Muxer, ArrayBufferTarget } = await import('mp4-muxer')
+  const { outputSize, fps, frames } = project
+
+  const target = new ArrayBufferTarget()
+  const muxer = new Muxer({
+    target,
+    fastStart: 'in-memory',
+    video: { codec: 'avc', width: outputSize, height: outputSize, frameRate: fps },
+  })
+
+  const encoder = new VideoEncoder({
+    output: (chunk, meta) => muxer.addVideoChunk(chunk, meta ?? undefined),
+    error: (e) => { throw e },
+  })
+  encoder.configure({ codec: 'avc1.42001f', width: outputSize, height: outputSize, bitrate: 4_000_000 })
+
+  let timestampUs = 0
+  const frameDurationUs = (1 / fps) * 1_000_000
+
+  for (const frame of frames) {
+    const snapshot = resolveFrame(frame)
+    adapter.renderFrame(snapshot)
+    const blob = await adapter.exportPng()
+    const bitmap = await createImageBitmap(blob)
+
+    for (let tick = 0; tick < frame.durationFrames; tick++) {
+      const videoFrame = new VideoFrame(bitmap, { timestamp: timestampUs, duration: frameDurationUs })
+      encoder.encode(videoFrame, { keyFrame: tick === 0 })
+      videoFrame.close()
+      timestampUs += frameDurationUs
+    }
+    bitmap.close()
+  }
+
+  await encoder.flush()
+  muxer.finalize()
+
+  downloadBlob(new Blob([target.buffer], { type: 'video/mp4' }), 'texture.mp4')
+}
+
 // ── PNG frame export ──────────────────────────────────────────────────────────
 
 export async function exportFramePng(adapter: RendererAdapter): Promise<void> {
