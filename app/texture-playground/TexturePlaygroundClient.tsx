@@ -10,6 +10,7 @@ import { resolveFrame } from './lib/resolve'
 import { usePlayback } from './lib/playback'
 import { exportWebMDeterministic, exportFramePng } from './lib/export'
 import { useHistory } from './lib/useHistory'
+import { serializeProject, deserializeProject } from './lib/serialize'
 
 const DEFAULT_LAYERS: Layer[] = [
   { id: 'bg',  kind: 'background',  color: '#ff92e0' },
@@ -26,8 +27,17 @@ const DEFAULT_PROJECT: Project = {
   activeFrameId: 'f1',
 }
 
+function loadInitialProject(): Project {
+  try {
+    const raw = localStorage.getItem('texture-tool:autosave')
+    if (raw) return deserializeProject(JSON.parse(raw))
+  } catch { /* ignore */ }
+  return DEFAULT_PROJECT
+}
+
 export default function TexturePlaygroundClient() {
-  const { state: project, set: setProject, undo, redo, canUndo, canRedo } = useHistory<Project>(DEFAULT_PROJECT)
+  const [initialProject] = useState(loadInitialProject)
+  const { state: project, set: setProject, undo, redo, canUndo, canRedo } = useHistory<Project>(initialProject)
   const adapterRef = useRef<RendererAdapter | null>(null)
   const [adapter, setAdapter] = useState<RendererAdapter | null>(null)
   const activeFrame = project.frames.find(f => f.id === project.activeFrameId) ?? project.frames[0]
@@ -52,6 +62,14 @@ export default function TexturePlaygroundClient() {
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [undo, redo])
+
+  useEffect(() => {
+    const t = setTimeout(async () => {
+      const serialized = await serializeProject(project)
+      localStorage.setItem('texture-tool:autosave', JSON.stringify(serialized))
+    }, 500)
+    return () => clearTimeout(t)
+  }, [project])
 
   function handleLayerChange(layerId: string, override: LayerOverride) {
     setProject(p => ({
@@ -239,6 +257,8 @@ export default function TexturePlaygroundClient() {
         onAddFilter={handleAddFilter}
         onFilterChange={handleFilterChange}
         onRemoveFilter={handleRemoveFilter}
+        project={project}
+        onLoadPreset={(p) => setProject(p)}
       />
 
       {/* Canvas area — TopBar and Timeline float inside this */}

@@ -9,6 +9,8 @@ import ColorPicker from './controls/ColorPicker'
 import MidgroundPicker from './controls/MidgroundPicker'
 import FilterStack from './controls/FilterStack'
 import CompositionPicker from './controls/CompositionPicker'
+import PresetBar from './PresetBar'
+import type { Project } from '../lib/types'
 
 type Props = {
   snapshot: FrameSnapshot
@@ -18,6 +20,8 @@ type Props = {
   onAddFilter: (entry: FilterEntry) => void
   onFilterChange: (filterType: FilterType, changes: Partial<FilterEntry>) => void
   onRemoveFilter: (filterType: FilterType) => void
+  project: Project
+  onLoadPreset: (project: Project) => void
 }
 
 type SliderProps = {
@@ -78,6 +82,7 @@ function Section({ title, open, onToggle, children }: SectionProps) {
 export default function LeftPanel({
   snapshot, outputSize, onLayerChange, onAddGridLayer,
   onAddFilter, onFilterChange, onRemoveFilter,
+  project, onLoadPreset,
 }: Props) {
   const [open, setOpen] = useState({ filters: false, texture: false, midground: true, colour: true })
 
@@ -167,6 +172,9 @@ export default function LeftPanel({
       <Section title="Colour bg" open={open.colour} onToggle={() => toggle('colour')}>
         <ColorPicker value={bgLayer.color} onChange={(color) => onLayerChange(bgLayer.id, { color })} />
       </Section>
+
+      <div style={{ flex: 1 }} />
+      <PresetBar project={project} onLoad={onLoadPreset} />
 
     </div>
   )
