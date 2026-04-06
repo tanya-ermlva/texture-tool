@@ -69,6 +69,7 @@ export default function TexturePlaygroundClient() {
     const newLayer: GridLayer = {
       id: nanoid(6), kind: 'grid', composition,
       spacing: 20, thickness: 1, dotSize: 3, opacity: 1, scale: 1,
+      color: '#1e1e1e',
     }
     setProject(p => ({
       ...p,

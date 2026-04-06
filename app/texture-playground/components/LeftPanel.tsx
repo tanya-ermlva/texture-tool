@@ -12,6 +12,7 @@ import CompositionPicker from './controls/CompositionPicker'
 
 type Props = {
   snapshot: FrameSnapshot
+  outputSize: number
   onLayerChange: (layerId: string, override: LayerOverride) => void
   onAddGridLayer: () => void
   onAddFilter: (entry: FilterEntry) => void
@@ -75,7 +76,7 @@ function Section({ title, open, onToggle, children }: SectionProps) {
 }
 
 export default function LeftPanel({
-  snapshot, onLayerChange, onAddGridLayer,
+  snapshot, outputSize, onLayerChange, onAddGridLayer,
   onAddFilter, onFilterChange, onRemoveFilter,
 }: Props) {
   const [open, setOpen] = useState({ filters: false, texture: false, midground: true, colour: true })
@@ -124,6 +125,13 @@ export default function LeftPanel({
             )}
             <Slider label="Scale" value={gridLayer.scale} min={0.5} max={3} step={0.05} onChange={(v) => onLayerChange(gridLayer.id, { scale: v })} />
             <Slider label="Opacity" value={Math.round(gridLayer.opacity * 100)} min={0} max={100} step={1} unit="%" onChange={(v) => onLayerChange(gridLayer.id, { opacity: v / 100 })} />
+            <div style={{ marginTop: 8 }}>
+              <span style={{ fontFamily: 'var(--font-geist)', fontSize: 13, color: '#72726e', display: 'block', marginBottom: 8 }}>Colour</span>
+              <ColorPicker
+                value={gridLayer.color}
+                onChange={(color) => onLayerChange(gridLayer.id, { color })}
+              />
+            </div>
           </div>
         ) : (
           <button
@@ -150,8 +158,8 @@ export default function LeftPanel({
           <div style={{ marginTop: 16 }}>
             <Slider label="Scale" value={midLayer.scale} min={0.5} max={3} step={0.05} onChange={(v) => onLayerChange(midLayer.id, { scale: v })} />
             <Slider label="Opacity" value={Math.round(midLayer.opacity * 100)} min={0} max={100} step={1} unit="%" onChange={(v) => onLayerChange(midLayer.id, { opacity: v / 100 })} />
-            <Slider label="X offset" value={midLayer.x} min={-512} max={512} step={1} unit="px" onChange={(v) => onLayerChange(midLayer.id, { x: v })} />
-            <Slider label="Y offset" value={midLayer.y} min={-512} max={512} step={1} unit="px" onChange={(v) => onLayerChange(midLayer.id, { y: v })} />
+            <Slider label="X offset" value={midLayer.x} min={-outputSize / 2} max={outputSize / 2} step={1} unit="px" onChange={(v) => onLayerChange(midLayer.id, { x: v })} />
+            <Slider label="Y offset" value={midLayer.y} min={-outputSize / 2} max={outputSize / 2} step={1} unit="px" onChange={(v) => onLayerChange(midLayer.id, { y: v })} />
           </div>
         )}
       </Section>

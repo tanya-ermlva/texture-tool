@@ -23,6 +23,7 @@ export type GridLayer = {
   dotSize: number
   opacity: number
   scale: number
+  color: string   // hex colour for lines/dots, default '#1e1e1e'
 }
 
 export type ImageLayer = {

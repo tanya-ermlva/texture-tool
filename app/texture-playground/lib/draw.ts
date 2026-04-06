@@ -2,8 +2,6 @@
 import { Graphics } from 'pixi.js'
 import type { GridLayer } from './types'
 
-const LINE_COLOR = 0x1e1e1e
-
 export function drawBackground(g: Graphics, color: string, size: number): void {
   g.clear()
   g.rect(0, 0, size, size).fill(color)
@@ -17,7 +15,7 @@ export function drawDotGrid(g: Graphics, layer: GridLayer, size: number): void {
   g.alpha = opacity
   for (let x = step / 2; x < size; x += step) {
     for (let y = step / 2; y < size; y += step) {
-      g.circle(x, y, radius).fill(LINE_COLOR)
+      g.circle(x, y, radius).fill(layer.color)
     }
   }
 }
@@ -28,10 +26,10 @@ export function drawRegularGrid(g: Graphics, layer: GridLayer, size: number): vo
   const step = spacing * scale
   g.alpha = opacity
   for (let x = 0; x <= size; x += step) {
-    g.moveTo(x, 0).lineTo(x, size).stroke({ color: LINE_COLOR, width: thickness * scale })
+    g.moveTo(x, 0).lineTo(x, size).stroke({ color: layer.color, width: thickness * scale })
   }
   for (let y = 0; y <= size; y += step) {
-    g.moveTo(0, y).lineTo(size, y).stroke({ color: LINE_COLOR, width: thickness * scale })
+    g.moveTo(0, y).lineTo(size, y).stroke({ color: layer.color, width: thickness * scale })
   }
 }
 
@@ -45,13 +43,13 @@ export function drawVariableGrid(g: Graphics, layer: GridLayer, size: number): v
   let idx = 0
   for (let x = 0; x <= size; x += step) {
     const w = idx % 3 === 0 ? thickWeight : thinWeight
-    g.moveTo(x, 0).lineTo(x, size).stroke({ color: LINE_COLOR, width: w })
+    g.moveTo(x, 0).lineTo(x, size).stroke({ color: layer.color, width: w })
     idx++
   }
   idx = 0
   for (let y = 0; y <= size; y += step) {
     const w = idx % 3 === 0 ? thickWeight : thinWeight
-    g.moveTo(0, y).lineTo(size, y).stroke({ color: LINE_COLOR, width: w })
+    g.moveTo(0, y).lineTo(size, y).stroke({ color: layer.color, width: w })
     idx++
   }
 }
@@ -67,7 +65,7 @@ export function drawLinear(g: Graphics, layer: GridLayer, size: number): void {
   let idx = 0
   for (let y = 0; y <= size; y += step) {
     const w = idx % 4 === 0 ? thickWeight : thinWeight
-    g.moveTo(0, y).lineTo(size, y).stroke({ color: LINE_COLOR, width: w })
+    g.moveTo(0, y).lineTo(size, y).stroke({ color: layer.color, width: w })
     idx++
   }
 }
@@ -81,19 +79,19 @@ export function drawLayered(g: Graphics, layer: GridLayer, size: number): void {
   // coarse grid at 60% opacity
   const coarseAlpha = 0.6
   for (let x = 0; x <= size; x += coarseStep) {
-    g.moveTo(x, 0).lineTo(x, size).stroke({ color: LINE_COLOR, width: thickness * scale, alpha: coarseAlpha })
+    g.moveTo(x, 0).lineTo(x, size).stroke({ color: layer.color, width: thickness * scale, alpha: coarseAlpha })
   }
   for (let y = 0; y <= size; y += coarseStep) {
-    g.moveTo(0, y).lineTo(size, y).stroke({ color: LINE_COLOR, width: thickness * scale, alpha: coarseAlpha })
+    g.moveTo(0, y).lineTo(size, y).stroke({ color: layer.color, width: thickness * scale, alpha: coarseAlpha })
   }
   // fine grid offset at 35% opacity
   const fineAlpha = 0.35
   const offset = fineStep / 2
   for (let x = offset; x <= size; x += fineStep) {
-    g.moveTo(x, 0).lineTo(x, size).stroke({ color: LINE_COLOR, width: (thickness * scale) / 2, alpha: fineAlpha })
+    g.moveTo(x, 0).lineTo(x, size).stroke({ color: layer.color, width: (thickness * scale) / 2, alpha: fineAlpha })
   }
   for (let y = offset; y <= size; y += fineStep) {
-    g.moveTo(0, y).lineTo(size, y).stroke({ color: LINE_COLOR, width: (thickness * scale) / 2, alpha: fineAlpha })
+    g.moveTo(0, y).lineTo(size, y).stroke({ color: layer.color, width: (thickness * scale) / 2, alpha: fineAlpha })
   }
 }
 
@@ -105,7 +103,7 @@ export function drawCheckered(g: Graphics, layer: GridLayer, size: number): void
   for (let row = 0; row * cell < size; row++) {
     for (let col = 0; col * cell < size; col++) {
       if ((row + col) % 2 === 0) {
-        g.rect(col * cell, row * cell, cell, cell).fill(LINE_COLOR)
+        g.rect(col * cell, row * cell, cell, cell).fill(layer.color)
       }
     }
   }
