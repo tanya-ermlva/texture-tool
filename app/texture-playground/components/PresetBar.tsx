@@ -126,16 +126,19 @@ export default function PresetBar({ project, onLoad }: Props) {
 
   return (
     <>
-      {/* ● 01 trigger */}
-      <button
+      {/* ● 01 trigger — group on outer div so children inherit group-hover */}
+      <div
+        className="group flex flex-row items-center gap-3 cursor-pointer px-2 pb-1"
         onClick={() => setOpen(true)}
-        className="group flex flex-row items-center gap-3 rounded-[24px] cursor-pointer px-2 pb-1 border-none bg-transparent hover:opacity-60 transition-opacity"
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === 'Enter' && setOpen(true)}
       >
-        <div className="bg-ink rounded-full size-5 flex-shrink-0" />
-        <span className="font-sans text-display font-normal text-ink leading-none">
+        <div className="bg-ink rounded-full size-5 flex-shrink-0 group-hover:bg-pink transition-colors" />
+        <span className="font-sans text-display font-normal text-ink leading-none group-hover:text-pink transition-colors">
           {displayNum}
         </span>
-      </button>
+      </div>
 
       {/* iOS-style modal sheet */}
       {open && (

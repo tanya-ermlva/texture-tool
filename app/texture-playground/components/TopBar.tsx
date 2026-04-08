@@ -49,22 +49,24 @@ export default function TopBar({
   return (
     <div className="flex justify-end p-4">
       <div className="relative">
-        {/* Main download button */}
-        <button
+        {/* Main download button — group on wrapper div so SVG fill inherits group-hover */}
+        <div
+          className="group flex items-center gap-[0.08em] cursor-pointer"
+          style={{ opacity: exporting ? 0.4 : 1, pointerEvents: exporting ? 'none' : 'auto' }}
           onClick={() => !exporting && setOpen(o => !o)}
-          className="group flex items-center gap-[0.08em] font-sans text-display font-normal text-ink hover:opacity-60 transition-opacity"
-          style={{ cursor: exporting ? 'wait' : 'pointer', opacity: exporting ? 0.4 : undefined }}
         >
-          {exporting ? 'Exporting…' : `Download ${shortLabel[videoFormat]}`}
+          <span className="font-sans text-display font-normal text-ink group-hover:text-pink transition-colors">
+            {exporting ? 'Exporting…' : `Download ${shortLabel[videoFormat]}`}
+          </span>
           {!exporting && (
             <svg width="32" height="32" viewBox="0 0 46 46" fill="none">
               <path
                 d="M25.5762 36.4806C24.4312 38.5065 21.5688 38.5065 20.4238 36.4806L6.90298 12.5581C5.758 10.5323 7.18922 8 9.47919 8L36.5208 8C38.8108 8 40.242 10.5323 39.097 12.5581L25.5762 36.4806Z"
-                fill="#312E2E"
+                className="fill-ink group-hover:fill-pink transition-colors"
               />
             </svg>
           )}
-        </button>
+        </div>
 
         {/* Dropdown */}
         {open && (

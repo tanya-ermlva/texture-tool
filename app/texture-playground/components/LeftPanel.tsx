@@ -149,7 +149,7 @@ export default function LeftPanel({
   }
 
   return (
-    <div className="flex flex-col gap-2 pt-4 overflow-y-auto">
+    <div className="flex flex-col gap-2 pt-4">
       <Row
         label="Filter"
         open={open === 'filter'}

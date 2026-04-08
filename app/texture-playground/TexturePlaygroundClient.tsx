@@ -287,22 +287,25 @@ export default function TexturePlaygroundClient() {
   }
 
   return (
-    <div className="grid grid-cols-[378px_1fr] w-screen h-screen p-4 gap-2 bg-stone">
+    <div className="grid grid-cols-[378px_1fr] grid-rows-1 w-screen h-screen p-4 gap-2 bg-stone overflow-hidden">
 
       {/* Left column — white bg, scrollable */}
-      <div className="flex flex-col h-full bg-white rounded-[28px] overflow-hidden px-4">
-        <LeftPanel
-          snapshot={snapshot}
-          outputSize={project.outputSize}
-          onLayerChange={handleLayerChange}
-          onAddGridLayer={() => handleAddGridLayer('dot-grid')}
-          onDeleteLayer={handleDeleteLayer}
-          onAddFilter={handleAddFilter}
-          onFilterChange={handleFilterChange}
-          onRemoveFilter={handleRemoveFilter}
-        />
-        {/* PresetBar anchored to bottom of left column */}
-        <div className="mt-auto py-4">
+      <div className="flex flex-col h-full bg-white rounded-[28px] px-4">
+        {/* Layer rows — scrollable if content overflows */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <LeftPanel
+            snapshot={snapshot}
+            outputSize={project.outputSize}
+            onLayerChange={handleLayerChange}
+            onAddGridLayer={() => handleAddGridLayer('dot-grid')}
+            onDeleteLayer={handleDeleteLayer}
+            onAddFilter={handleAddFilter}
+            onFilterChange={handleFilterChange}
+            onRemoveFilter={handleRemoveFilter}
+          />
+        </div>
+        {/* PresetBar always visible at bottom — self-start collapses width to content */}
+        <div className="py-4 flex-shrink-0 self-start">
           <PresetBar project={project} onLoad={(p) => setProject(p)} />
         </div>
       </div>
@@ -320,7 +323,7 @@ export default function TexturePlaygroundClient() {
         />
 
         {/* Canvas — square, centered, fills remaining height */}
-        <div className="relative flex-1 flex items-center justify-center p-4 min-h-0">
+        <div className="relative flex-1 flex items-center justify-center p-6 min-h-0">
           <div className="aspect-square h-full max-h-full rounded-[24px] overflow-hidden">
             <CanvasPreview
               snapshot={snapshot}
