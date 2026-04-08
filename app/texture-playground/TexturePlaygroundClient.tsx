@@ -289,8 +289,8 @@ export default function TexturePlaygroundClient() {
   return (
     <div className="grid grid-cols-[378px_1fr] grid-rows-1 w-screen h-screen p-4 gap-2 bg-stone overflow-hidden">
 
-      {/* Left column — white bg, scrollable */}
-      <div className="flex flex-col h-full bg-white rounded-[28px] px-4">
+      {/* Left column — no bg, scrollable */}
+      <div className="flex flex-col h-full rounded-[28px] px-4">
         {/* Layer rows — scrollable if content overflows */}
         <div className="flex-1 min-h-0 overflow-y-auto">
           <LeftPanel

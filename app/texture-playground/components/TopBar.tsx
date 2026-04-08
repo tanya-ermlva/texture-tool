@@ -55,7 +55,7 @@ export default function TopBar({
           style={{ opacity: exporting ? 0.4 : 1, pointerEvents: exporting ? 'none' : 'auto' }}
           onClick={() => !exporting && setOpen(o => !o)}
         >
-          <span className="font-sans text-display font-normal text-ink group-hover:text-pink transition-colors">
+          <span className="font-sans text-display xl:text-display-lg font-normal text-ink group-hover:text-pink transition-colors">
             {exporting ? 'Exporting…' : `Download ${shortLabel[videoFormat]}`}
           </span>
           {!exporting && (
@@ -97,7 +97,7 @@ export default function TopBar({
                   fontFamily: 'var(--font-geist)', fontSize: 14,
                   padding: '8px 14px', border: 'none',
                   background: videoFormat === fmt ? 'rgba(98,90,34,0.08)' : 'transparent',
-                  color: '#1a1a1a', cursor: 'pointer',
+                  color: '#312E2E', cursor: 'pointer',
                 }}
               >
                 <span>{FORMAT_LABELS[fmt]}</span>

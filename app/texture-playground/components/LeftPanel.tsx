@@ -38,7 +38,7 @@ function Slider({ label, value, min, max, step, unit = '', onChange }: SliderPro
     <div style={{ marginBottom: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
         <span style={{ fontFamily: 'var(--font-geist)', fontSize: 13, color: '#72726e' }}>{label}</span>
-        <span style={{ fontFamily: 'var(--font-geist-mono)', fontSize: 13, color: '#292929' }}>{value}{unit}</span>
+        <span style={{ fontFamily: 'var(--font-geist-mono)', fontSize: 13, color: '#312E2E' }}>{value}{unit}</span>
       </div>
       <input
         type="range" min={min} max={max} step={step} value={value}
@@ -59,7 +59,7 @@ function Swatch({ color }: { color: string }) {
 
 function TextureSwatchIcon({ composition }: { composition: CompositionType }) {
   return (
-    <div className={`${swatchBase} bg-[#1a1a1a] flex items-center justify-center`}>
+    <div className={`${swatchBase} bg-ink flex items-center justify-center`}>
       <CompositionIcon type={composition} size={26} color="#ffffff" />
     </div>
   )
@@ -104,12 +104,12 @@ type RowProps = {
 
 function Row({ label, open, onToggle, swatch, children }: RowProps) {
   return (
-    <div className="flex flex-col gap-0">
+    <div className={`group border-[0.5px] border-ink/30 overflow-hidden transition-[border-radius] duration-300 ease-out ${
+      open ? 'rounded-[24px]' : 'rounded-[24px] hover:rounded-[999px]'
+    }`}>
       <div
         onClick={onToggle}
-        className={`group flex flex-row justify-between items-center p-[6px] border-[0.5px] border-ink/30 cursor-pointer select-none transition-[border-radius] duration-300 ease-out ${
-          open ? 'rounded-[24px]' : 'rounded-[24px] hover:rounded-[999px]'
-        }`}
+        className="flex flex-row justify-between items-center p-[6px] cursor-pointer select-none"
       >
         <h4 className="pl-4 font-sans text-2xl font-normal text-ink">{label}</h4>
         <div>{swatch}</div>

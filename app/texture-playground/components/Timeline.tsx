@@ -106,7 +106,7 @@ export default function Timeline({
       </div>
 
       {/* fps + play — pinned to right */}
-      <div className="absolute right-4 flex items-center gap-3">
+      <div className="absolute -right-2 flex items-center gap-3">
         <select
           value={fps}
           onChange={(e) => onFpsChange(Number(e.target.value))}

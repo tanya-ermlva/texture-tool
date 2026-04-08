@@ -13,7 +13,7 @@ type Props = {
 
 export default function ColorPicker({ value, onChange }: Props) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 15 }}>
+    <div className="grid grid-cols-4 gap-4">
       {COLOURS.map((color) => {
         const selected = value.toLowerCase() === color.toLowerCase()
         return (
@@ -21,16 +21,14 @@ export default function ColorPicker({ value, onChange }: Props) {
             key={color}
             onClick={() => onChange(color)}
             title={color}
+            className="rounded-full aspect-square w-full cursor-pointer"
             style={{
-              background: '#f7f7f2',
-              border: selected ? '2px solid #d1e043' : '0.5px solid rgba(71,67,42,0.2)',
-              borderRadius: '50%', padding: 1,
-              cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: color,
+              boxShadow: selected
+                ? '0 0 0 2px #f7f7f2, 0 0 0 4px #d1e043'
+                : '0 0 0 0.5px rgba(71,67,42,0.2)',
             }}
-          >
-            <div style={{ width: 50, height: 50, borderRadius: '50%', background: color }} />
-          </button>
+          />
         )
       })}
     </div>

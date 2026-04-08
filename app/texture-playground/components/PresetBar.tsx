@@ -117,7 +117,7 @@ export default function PresetBar({ project, onLoad }: Props) {
     padding: '0 20px',
     height: 44,
     fontFamily: 'var(--font-geist)', fontSize: 17,
-    color: '#1a1a1a', cursor: 'pointer',
+    color: '#312E2E', cursor: 'pointer',
     background: 'transparent', border: 'none', width: '100%',
     textAlign: 'left',
     borderTop: '0.5px solid rgba(0,0,0,0.12)',
@@ -134,8 +134,8 @@ export default function PresetBar({ project, onLoad }: Props) {
         tabIndex={0}
         onKeyDown={(e) => e.key === 'Enter' && setOpen(true)}
       >
-        <div className="bg-ink rounded-full size-5 flex-shrink-0 group-hover:bg-pink transition-colors" />
-        <span className="font-sans text-display font-normal text-ink leading-none group-hover:text-pink transition-colors">
+        <div className="bg-ink rounded-full size-6 xl:size-10 flex-shrink-0 group-hover:bg-pink transition-colors" />
+        <span className="font-sans text-display xl:text-display-lg font-normal text-ink leading-none group-hover:text-pink transition-colors">
           {displayNum}
         </span>
       </div>
@@ -170,7 +170,7 @@ export default function PresetBar({ project, onLoad }: Props) {
               backdropFilter: 'blur(20px)',
               textAlign: 'center',
             }}>
-              <div style={{ fontFamily: 'var(--font-geist)', fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>
+              <div style={{ fontFamily: 'var(--font-geist)', fontSize: 13, fontWeight: 600, color: '#312E2E' }}>
                 Presets
               </div>
               <div style={{ fontFamily: 'var(--font-geist)', fontSize: 12, color: '#8e8e93', marginTop: 2 }}>
@@ -205,7 +205,7 @@ export default function PresetBar({ project, onLoad }: Props) {
                       }}>
                         {String(i + 1).padStart(2, '0')}
                       </span>
-                      <span style={{ fontFamily: 'var(--font-geist)', fontSize: 17, color: '#1a1a1a', flex: 1 }}>
+                      <span style={{ fontFamily: 'var(--font-geist)', fontSize: 17, color: '#312E2E', flex: 1 }}>
                         {p.name}
                       </span>
                       {p.id === activeId && (
