@@ -45,12 +45,11 @@ function randOffset() { return Math.round((Math.random() * 100) - 50) }
 function makeDefaultProject(): Project {
   const compositions = shuffle(COMPOSITIONS).slice(0, 3)
   const bgColor = pick(BG_COLORS)
-  const textureIndices = shuffle(Array.from({ length: TEXTURE_COUNT }, (_, i) => i + 1)).slice(0, 3)
+  const textureIndex = Math.floor(Math.random() * TEXTURE_COUNT) + 1
+  const baseFilter: FilterEntry = { ...pick(RANDOM_FILTERS) }
+  if (baseFilter.type === 'noise') baseFilter.seed = Math.random()
 
-  const frames: Frame[] = compositions.map((composition, i) => {
-    const filterEntry: FilterEntry = { ...pick(RANDOM_FILTERS) }
-    if (filterEntry.type === 'noise') filterEntry.seed = Math.random()
-
+  const frames: Frame[] = compositions.map((composition) => {
     const gridLayer: GridLayer = {
       id: nanoid(6), kind: 'grid', composition,
       spacing: 20, thickness: 1, dotSize: 3, opacity: 1, scale: 1,
@@ -63,12 +62,12 @@ function makeDefaultProject(): Project {
         { id: nanoid(6), kind: 'background', color: bgColor },
         {
           id: nanoid(6), kind: 'midground',
-          src: `/textures/midground/${textureIndices[i]}.png`,
-          label: `${textureIndices[i]}.png`,
+          src: `/textures/midground/${textureIndex}.png`,
+          label: `${textureIndex}.png`,
           opacity: 1, scale: pick(SCALES), x: randOffset(), y: randOffset(),
         },
         gridLayer,
-        { id: nanoid(6), kind: 'adjustment', filters: [filterEntry] },
+        { id: nanoid(6), kind: 'adjustment', filters: [{ ...baseFilter }] },
       ],
       durationFrames: 10,
     }
