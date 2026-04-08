@@ -37,10 +37,15 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
+const TEXTURE_COUNT = 11
+const SCALES = [0.8, 1.2]
+
+function randOffset() { return Math.round((Math.random() * 40) - 20) }
+
 function makeDefaultProject(): Project {
   const compositions = shuffle(COMPOSITIONS).slice(0, 3)
   const bgColor = pick(BG_COLORS)
-  const xOffsets = [-200, 0, 200]
+  const textureIndices = shuffle(Array.from({ length: TEXTURE_COUNT }, (_, i) => i + 1)).slice(0, 3)
 
   const frames: Frame[] = compositions.map((composition, i) => {
     const filterEntry: FilterEntry = { ...pick(RANDOM_FILTERS) }
@@ -56,7 +61,12 @@ function makeDefaultProject(): Project {
       id: nanoid(6),
       layers: [
         { id: nanoid(6), kind: 'background', color: bgColor },
-        { id: nanoid(6), kind: 'midground',  src: null, label: '', opacity: 1, scale: 1, x: xOffsets[i], y: 0 },
+        {
+          id: nanoid(6), kind: 'midground',
+          src: `/textures/midground/${textureIndices[i]}.png`,
+          label: `${textureIndices[i]}.png`,
+          opacity: 1, scale: pick(SCALES), x: randOffset(), y: randOffset(),
+        },
         gridLayer,
         { id: nanoid(6), kind: 'adjustment', filters: [filterEntry] },
       ],
