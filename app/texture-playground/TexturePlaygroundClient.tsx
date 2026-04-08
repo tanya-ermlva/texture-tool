@@ -37,7 +37,7 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
-const TEXTURE_COUNT = 11
+const TEXTURE_COUNT = 9
 const SCALES = [1.0, 1.2, 1.5]
 
 function randOffset() { return Math.round((Math.random() * 40) - 20) }
@@ -104,6 +104,13 @@ export default function TexturePlaygroundClient() {
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === ' ' && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+        const tag = (e.target as HTMLElement).tagName
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+        e.preventDefault()
+        setPlaying(p => !p)
+        return
+      }
       const mod = e.metaKey || e.ctrlKey
       if (!mod) return
       if (e.key === 'z' && !e.shiftKey) {

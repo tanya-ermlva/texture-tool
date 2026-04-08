@@ -18,7 +18,7 @@ export class PixiRenderer implements RendererAdapter {
   private initialized = false
   private layerGraphics = new Map<string, Graphics | Sprite>()
   private layerUrls = new Map<string, string>()
-  private pendingLoads = new Map<string, Promise<void>>()
+  private activeLayerIds = new Set<string>()
   private size = 512
   private layersContainer: Container | null = null
   private displacementSprite: Sprite | null = null
@@ -75,28 +75,23 @@ export class PixiRenderer implements RendererAdapter {
     const contentLayers = snapshot.layers.filter((l) => l.kind !== 'adjustment')
     const adjustmentLayer = snapshot.layers.find((l) => l.kind === 'adjustment') as AdjustmentLayer | undefined
 
-    // Track which layer ids appear in this snapshot
+    // Update active set — every async callback checks this to self-cancel if stale
     const snapshotIds = new Set(contentLayers.map((l) => l.id))
+    this.activeLayerIds = snapshotIds
 
-    // Remove graphics for layers that no longer exist in this snapshot
+    // Remove sprites for layers that are no longer in this snapshot
     for (const id of [...this.layerGraphics.keys()]) {
       if (!snapshotIds.has(id)) {
         const g = this.layerGraphics.get(id)!
         container.removeChild(g)
         g.destroy()
         this.layerGraphics.delete(id)
-        this.layerUrls.delete(id)
       }
     }
-
-    // Also invalidate pending async loads for stale layer ids.
-    // Without this, a texture that finishes loading after a frame switch
-    // passes the layerUrls stale-check and injects into the wrong frame.
-    for (const id of [...this.pendingLoads.keys()]) {
-      if (!snapshotIds.has(id)) {
-        this.pendingLoads.delete(id)
-        this.layerUrls.delete(id)
-      }
+    // Also purge layerUrls for any id not in this snapshot (covers in-flight loads
+    // that haven't created a sprite yet — they check activeLayerIds, not layerUrls)
+    for (const id of [...this.layerUrls.keys()]) {
+      if (!snapshotIds.has(id)) this.layerUrls.delete(id)
     }
 
     // Render layers bottom-to-top, then flush to canvas immediately
@@ -168,10 +163,10 @@ export class PixiRenderer implements RendererAdapter {
           const capturedOpacity = layer.opacity
           const capturedX = layer.x
           const capturedY = layer.y
-          const loadPromise = Assets.load<Texture>(layer.src).then((tex) => {
+          Assets.load<Texture>(layer.src).then((tex) => {
             if (!capturedApp || !this.initialized) return
-            // If the user switched to a different src while we were loading, discard
-            if (this.layerUrls.get(capturedLayerId) !== capturedSrc) return
+            // Layer is no longer part of the active frame — discard
+            if (!this.activeLayerIds.has(capturedLayerId)) return
             const sprite = new Sprite(tex)
             sprite.width = size * capturedScale
             sprite.height = size * capturedScale
@@ -179,20 +174,12 @@ export class PixiRenderer implements RendererAdapter {
             sprite.x = capturedX
             sprite.y = capturedY
             this.layerGraphics.set(capturedLayerId, sprite)
-            // Add to container (exact index will be fixed on next renderFrame call)
             if (this.layersContainer) this.layersContainer.addChild(sprite)
-            // Re-render now that the texture dimensions are real
             capturedApp.renderer.render(capturedApp.stage)
           }).catch((err) => {
             console.error(`[renderer] Failed to load midground texture: ${capturedSrc}`, err)
-            // Clear the URL so the next renderFrame will retry
-            if (this.layerUrls.get(capturedLayerId) === capturedSrc) {
-              this.layerUrls.delete(capturedLayerId)
-            }
-          }).finally(() => {
-            this.pendingLoads.delete(capturedLayerId)
+            this.layerUrls.delete(capturedLayerId)
           })
-          this.pendingLoads.set(layer.id, loadPromise)
           return
         }
         // Texture already loaded — update transforms in place
@@ -260,8 +247,7 @@ export class PixiRenderer implements RendererAdapter {
   }
 
   async flushPendingLoads(): Promise<void> {
-    if (this.pendingLoads.size === 0) return
-    await Promise.all([...this.pendingLoads.values()])
+    // No-op: export path uses preWarmTextures instead
   }
 
   async preWarmTextures(urls: string[]): Promise<void> {
@@ -275,7 +261,7 @@ export class PixiRenderer implements RendererAdapter {
     }
     this.layerGraphics.clear()
     this.layerUrls.clear()
-    this.pendingLoads.clear()
+    this.activeLayerIds.clear()
     this.displacementSprite?.destroy()
     this.displacementSprite = null
     this.layersContainer = null  // app.destroy(true) handles actual cleanup
