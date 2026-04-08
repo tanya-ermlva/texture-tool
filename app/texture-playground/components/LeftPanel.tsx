@@ -177,7 +177,7 @@ export default function LeftPanel({
             {gridLayer.composition === 'dot-grid' && (
               <Slider label="Dot size" value={gridLayer.dotSize} min={1} max={20} step={0.5} unit="px" onChange={(v) => onLayerChange(gridLayer.id, { dotSize: v })} />
             )}
-            {gridLayer.composition !== 'dot-grid' && gridLayer.composition !== 'checkered' && (
+            {gridLayer.composition !== 'dot-grid' && (
               <Slider label="Thickness" value={gridLayer.thickness} min={0.5} max={8} step={0.5} unit="px" onChange={(v) => onLayerChange(gridLayer.id, { thickness: v })} />
             )}
             <Slider label="Scale" value={gridLayer.scale} min={0.5} max={3} step={0.05} onChange={(v) => onLayerChange(gridLayer.id, { scale: v })} />
@@ -218,9 +218,8 @@ export default function LeftPanel({
         />
         {midLayer.src && (
           <div style={{ marginTop: 16 }}>
-            <Slider label="Scale"    value={midLayer.scale}                     min={0.5} max={3}             step={0.05}            onChange={(v) => onLayerChange(midLayer.id, { scale: v })} />
-            <Slider label="Opacity"  value={Math.round(midLayer.opacity * 100)} min={0}   max={100}           step={1}    unit="%"   onChange={(v) => onLayerChange(midLayer.id, { opacity: v / 100 })} />
-            <Slider label="X offset" value={midLayer.x}                         min={-outputSize / 2} max={outputSize / 2} step={1} unit="px" onChange={(v) => onLayerChange(midLayer.id, { x: v })} />
+            <Slider label="Scale"    value={midLayer.scale} min={0.5} max={3}             step={0.05}            onChange={(v) => onLayerChange(midLayer.id, { scale: v })} />
+            <Slider label="X offset" value={midLayer.x}     min={-outputSize / 2} max={outputSize / 2} step={1} unit="px" onChange={(v) => onLayerChange(midLayer.id, { x: v })} />
             <Slider label="Y offset" value={midLayer.y}                         min={-outputSize / 2} max={outputSize / 2} step={1} unit="px" onChange={(v) => onLayerChange(midLayer.id, { y: v })} />
           </div>
         )}

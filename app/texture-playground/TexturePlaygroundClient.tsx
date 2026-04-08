@@ -15,7 +15,7 @@ import { useHistory } from './lib/useHistory'
 import { serializeProject, deserializeProject } from './lib/serialize'
 
 const COMPOSITIONS: CompositionType[] = [
-  'dot-grid', 'regular-grid', 'variable-grid', 'linear', 'layered', 'checkered',
+  'dot-grid', 'regular-grid', 'variable-grid', 'linear', 'layered',
 ]
 
 const RANDOM_FILTERS: FilterEntry[] = [
@@ -25,31 +25,49 @@ const RANDOM_FILTERS: FilterEntry[] = [
   { type: 'glow',         enabled: true, distance: 10, strength: 2, color: '#b2c248' },
 ]
 
+const BG_COLORS = ['#ff92e0', '#b2c248', '#4791e2', '#ee9212', '#a291ce', '#e5eacd', '#444625']
+
 function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)] }
 
-function makeDefaultProject(): Project {
-  const composition = pick(COMPOSITIONS)
-  const filterEntry: FilterEntry = { ...pick(RANDOM_FILTERS) }
-  if (filterEntry.type === 'noise') filterEntry.seed = Math.random()
-
-  const gridLayer: GridLayer = {
-    id: nanoid(6), kind: 'grid', composition,
-    spacing: 20, thickness: 1, dotSize: 3, opacity: 1, scale: 1,
-    color: '#1e1e1e',
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]]
   }
+  return a
+}
 
-  const layers: Layer[] = [
-    { id: 'bg',  kind: 'background', color: '#ff92e0' },
-    { id: 'mid', kind: 'midground',  src: null, label: '', opacity: 1, scale: 1, x: 0, y: 0 },
-    gridLayer,
-    { id: 'adj', kind: 'adjustment', filters: [filterEntry] },
-  ]
+function makeDefaultProject(): Project {
+  const compositions = shuffle(COMPOSITIONS).slice(0, 3)
+
+  const frames: Frame[] = compositions.map((composition) => {
+    const filterEntry: FilterEntry = { ...pick(RANDOM_FILTERS) }
+    if (filterEntry.type === 'noise') filterEntry.seed = Math.random()
+
+    const gridLayer: GridLayer = {
+      id: nanoid(6), kind: 'grid', composition,
+      spacing: 20, thickness: 1, dotSize: 3, opacity: 1, scale: 1,
+      color: '#1e1e1e',
+    }
+
+    return {
+      id: nanoid(6),
+      layers: [
+        { id: nanoid(6), kind: 'background', color: pick(BG_COLORS) },
+        { id: nanoid(6), kind: 'midground',  src: null, label: '', opacity: 1, scale: 1, x: 0, y: 0 },
+        gridLayer,
+        { id: nanoid(6), kind: 'adjustment', filters: [filterEntry] },
+      ],
+      durationFrames: 10,
+    }
+  })
 
   return {
-    frames: [{ id: 'f1', layers, durationFrames: 10 }],
+    frames,
     outputSize: 1024,
     fps: 24,
-    activeFrameId: 'f1',
+    activeFrameId: frames[0].id,
   }
 }
 

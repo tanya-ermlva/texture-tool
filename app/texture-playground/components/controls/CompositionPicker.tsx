@@ -9,7 +9,6 @@ const COMPOSITIONS: { id: CompositionType; label: string }[] = [
   { id: 'variable-grid', label: 'Variable' },
   { id: 'linear',        label: 'Linear' },
   { id: 'layered',       label: 'Layered' },
-  { id: 'checkered',     label: 'Checkered' },
 ]
 
 type Props = {
