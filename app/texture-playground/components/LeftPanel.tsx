@@ -51,19 +51,15 @@ function Slider({ label, value, min, max, step, unit = '', onChange }: SliderPro
 
 // ── Swatch components ──────────────────────────────────────────────────────────
 
+const swatchBase = 'size-16 flex-shrink-0 rounded-[18px] group-hover:rounded-full transition-[border-radius] duration-300 ease-out'
+
 function Swatch({ color }: { color: string }) {
-  return (
-    <div style={{ width: 64, height: 64, borderRadius: 18, background: color, flexShrink: 0 }} />
-  )
+  return <div className={swatchBase} style={{ background: color }} />
 }
 
 function TextureSwatchIcon({ composition }: { composition: CompositionType }) {
   return (
-    <div style={{
-      width: 64, height: 64, borderRadius: 18,
-      background: '#1a1a1a', flexShrink: 0,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
+    <div className={`${swatchBase} bg-[#1a1a1a] flex items-center justify-center`}>
       <CompositionIcon type={composition} size={26} color="#ffffff" />
     </div>
   )
@@ -75,14 +71,10 @@ function FilterSwatch({ filters }: { filters: FilterEntry[] }) {
   const shown = active.slice(0, 4)
   const single = shown.length === 1
   return (
-    <div style={{
-      width: 64, height: 64, borderRadius: 18,
-      background: '#b2c248', flexShrink: 0,
-      display: 'flex', flexWrap: 'wrap',
-      alignItems: 'center', justifyContent: 'center',
-      gap: single ? 0 : 4,
-      padding: single ? 0 : 10,
-    }}>
+    <div
+      className={`${swatchBase} bg-[#b2c248] flex flex-wrap items-center justify-center`}
+      style={{ gap: single ? 0 : 4, padding: single ? 0 : 10 }}
+    >
       {shown.map(f => (
         <FilterIcon key={f.type} type={f.type} size={single ? 26 : 14} color="#1a1a1a" />
       ))}
@@ -95,7 +87,7 @@ function ImageSwatch({ src }: { src: string | null }) {
   return (
     <img
       src={src} alt=""
-      style={{ width: 64, height: 64, borderRadius: 18, objectFit: 'cover', flexShrink: 0, display: 'block' }}
+      className={`${swatchBase} object-cover block`}
     />
   )
 }
