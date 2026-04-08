@@ -68,9 +68,6 @@ export default function FilterControls({ entry, onChange }: Props) {
         </div>
       )
 
-    case 'displacement':
-      return <Slider label="Scale" value={entry.scale} min={0} max={100} step={1} onChange={(v) => onChange({ scale: v })} />
-
     case 'rgbsplit':
       return <Slider label="Amount" value={entry.amount} min={0} max={30} step={0.5} unit="px" onChange={(v) => onChange({ amount: v })} />
 

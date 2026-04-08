@@ -12,18 +12,17 @@ type Props = {
   onRemove: (filterType: FilterType) => void
 }
 
-const FILTER_DEFAULTS: Record<FilterType, FilterEntry> = {
-  noise:        { type: 'noise',        enabled: true, intensity: 0.35, seed: Math.random(), grainSize: 1 },
-  rgbsplit:     { type: 'rgbsplit',     enabled: true, amount: 6 },
-  displacement: { type: 'displacement', enabled: true, scale: 30 },
-  glow:         { type: 'glow',         enabled: true, distance: 10, strength: 2, color: '#b2c248' },
+const FILTER_DEFAULTS: Partial<Record<FilterType, FilterEntry>> = {
+  noise:    { type: 'noise',    enabled: true, intensity: 0.35, seed: Math.random(), grainSize: 1 },
+  rgbsplit: { type: 'rgbsplit', enabled: true, amount: 6 },
+  glow:     { type: 'glow',     enabled: true, distance: 10, strength: 2, color: '#b2c248' },
 }
 
-const FILTER_LABELS: Record<FilterType, string> = {
-  noise: 'Grain', rgbsplit: 'RGB', displacement: 'Distort', glow: 'Glow',
+const FILTER_LABELS: Partial<Record<FilterType, string>> = {
+  noise: 'Grain', rgbsplit: 'RGB', glow: 'Glow',
 }
 
-const ALL_FILTERS = Object.keys(FILTER_DEFAULTS) as FilterType[]
+const ALL_FILTERS: FilterType[] = ['noise', 'rgbsplit', 'glow']
 
 export default function FilterStack({ layer, onAdd, onChange, onRemove }: Props) {
   const [expanded, setExpanded] = useState<FilterType | null>(null)
@@ -36,7 +35,8 @@ export default function FilterStack({ layer, onAdd, onChange, onRemove }: Props)
       if (expanded === type) setExpanded(null)
     } else {
       // Not active — add it and expand
-      onAdd(FILTER_DEFAULTS[type])
+      const def = FILTER_DEFAULTS[type]
+      if (def) onAdd(def)
       setExpanded(type)
     }
   }
@@ -80,7 +80,7 @@ export default function FilterStack({ layer, onAdd, onChange, onRemove }: Props)
                 color: active ? '#292929' : '#72726e',
                 letterSpacing: '0.02em', lineHeight: 1,
               }}>
-                {FILTER_LABELS[type]}
+                {FILTER_LABELS[type] ?? type}
               </span>
             </button>
           )

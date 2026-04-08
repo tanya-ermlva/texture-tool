@@ -19,10 +19,9 @@ const COMPOSITIONS: CompositionType[] = [
 ]
 
 const RANDOM_FILTERS: FilterEntry[] = [
-  { type: 'noise',        enabled: true, intensity: 0.35, seed: 0, grainSize: 1 },
-  { type: 'rgbsplit',     enabled: true, amount: 6 },
-  { type: 'displacement', enabled: true, scale: 30 },
-  { type: 'glow',         enabled: true, distance: 10, strength: 2, color: '#b2c248' },
+  { type: 'noise',    enabled: true, intensity: 0.35, seed: 0, grainSize: 1 },
+  { type: 'rgbsplit', enabled: true, amount: 6 },
+  { type: 'glow',     enabled: true, distance: 10, strength: 2, color: '#b2c248' },
 ]
 
 const BG_COLORS = ['#ff92e0', '#b2c248', '#4791e2', '#ee9212', '#a291ce', '#e5eacd', '#444625']

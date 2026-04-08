@@ -26,15 +26,6 @@ export default function FilterIcon({ type, size = 18, color = 'currentColor' }: 
         </svg>
       )
 
-    case 'displacement':
-      return (
-        <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-          <path d="M1 5 C3.5 2, 6 8, 8 5 S12 2, 15 5"     {...s} strokeWidth={1.2} />
-          <path d="M1 10 C3.5 7, 6 13, 8 10 S12 7, 15 10" {...s} strokeWidth={1.2} />
-          <path d="M1 15 C3.5 12, 6 16, 8 14 S12 12, 15 15" {...s} strokeWidth={0.6} opacity={0.4} />
-        </svg>
-      )
-
     case 'rgbsplit':
       return (
         <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
