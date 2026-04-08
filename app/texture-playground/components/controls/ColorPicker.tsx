@@ -13,7 +13,7 @@ type Props = {
 
 export default function ColorPicker({ value, onChange }: Props) {
   return (
-    <div className="grid grid-cols-4 gap-4">
+    <div className="grid grid-cols-8 gap-2">
       {COLOURS.map((color) => {
         const selected = value.toLowerCase() === color.toLowerCase()
         return (
