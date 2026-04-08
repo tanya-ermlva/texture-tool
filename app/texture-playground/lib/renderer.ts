@@ -78,13 +78,23 @@ export class PixiRenderer implements RendererAdapter {
     // Track which layer ids appear in this snapshot
     const snapshotIds = new Set(contentLayers.map((l) => l.id))
 
-    // Remove graphics for layers that no longer exist
+    // Remove graphics for layers that no longer exist in this snapshot
     for (const id of [...this.layerGraphics.keys()]) {
       if (!snapshotIds.has(id)) {
         const g = this.layerGraphics.get(id)!
         container.removeChild(g)
         g.destroy()
         this.layerGraphics.delete(id)
+        this.layerUrls.delete(id)
+      }
+    }
+
+    // Also invalidate pending async loads for stale layer ids.
+    // Without this, a texture that finishes loading after a frame switch
+    // passes the layerUrls stale-check and injects into the wrong frame.
+    for (const id of [...this.pendingLoads.keys()]) {
+      if (!snapshotIds.has(id)) {
+        this.pendingLoads.delete(id)
         this.layerUrls.delete(id)
       }
     }
