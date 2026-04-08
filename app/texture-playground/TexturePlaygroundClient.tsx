@@ -40,7 +40,7 @@ function shuffle<T>(arr: T[]): T[] {
 const TEXTURE_COUNT = 9
 const SCALES = [1.0, 1.2, 1.5]
 
-function randOffset() { return Math.round((Math.random() * 40) - 20) }
+function randOffset() { return Math.round((Math.random() * 100) - 50) }
 
 function makeDefaultProject(): Project {
   const compositions = shuffle(COMPOSITIONS).slice(0, 3)
