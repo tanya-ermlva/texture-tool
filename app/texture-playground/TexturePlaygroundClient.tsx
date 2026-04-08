@@ -287,7 +287,7 @@ export default function TexturePlaygroundClient() {
   }
 
   return (
-    <div className="grid grid-cols-[378px_1fr] grid-rows-1 w-screen h-screen p-4 gap-2 bg-stone overflow-hidden">
+    <div className="grid grid-cols-[378px_1fr] grid-rows-1 w-screen h-screen p-4 gap-2 bg-white overflow-hidden">
 
       {/* Left column — no bg, scrollable */}
       <div className="flex flex-col h-full rounded-[28px] px-4">
