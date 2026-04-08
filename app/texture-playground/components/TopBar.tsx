@@ -10,6 +10,7 @@ type Props = {
   onExportWebM: () => void
   onExportMp4: () => void
   onExportPngSequence: () => void
+  onRandomize: () => void
   exporting: boolean
 }
 
@@ -26,7 +27,7 @@ const FORMAT_LABELS: Record<VideoFormat, string> = {
 export default function TopBar({
   outputSize, onSizeChange,
   onExportFrame, onExportWebM, onExportMp4, onExportPngSequence,
-  exporting,
+  onRandomize, exporting,
 }: Props) {
   const [videoFormat, setVideoFormat] = useState<VideoFormat>('mp4')
   const [open, setOpen] = useState(false)
@@ -47,7 +48,18 @@ export default function TopBar({
   }
 
   return (
-    <div className="flex justify-end p-4">
+    <div className="flex justify-between items-center p-4">
+      <div
+        className="group flex flex-row items-center gap-3 cursor-pointer"
+        onClick={onRandomize}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === 'Enter' && onRandomize()}
+      >
+        <div className="bg-ink rounded-full size-6 xl:size-10 flex-shrink-0 group-hover:bg-pink transition-colors" />
+        <span className="font-sans text-display xl:text-display-lg font-normal text-ink leading-none group-hover:text-pink transition-colors">↺</span>
+      </div>
+
       <div className="relative">
         {/* Main download button — group on wrapper div so SVG fill inherits group-hover */}
         <div
