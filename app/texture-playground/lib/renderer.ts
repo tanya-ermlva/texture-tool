@@ -134,63 +134,66 @@ export class PixiRenderer implements RendererAdapter {
         }
         const existingSprite = this.layerGraphics.get(layer.id) as Sprite | undefined
         const prevUrl = this.layerUrls.get(layer.id)
-        if (!existingSprite || prevUrl !== layer.src) {
-          existingSprite?.destroy()
-          this.layerGraphics.delete(layer.id)
-          this.layerUrls.set(layer.id, layer.src)
 
-          // Fast path: texture already in Assets cache (pre-warmed for export,
-          // or previously loaded for this URL in another layer/frame). Create
-          // the sprite synchronously so renderFrame is fully sync during export.
-          const cachedTex = Assets.get<Texture>(layer.src)
-          if (cachedTex) {
-            const sprite = new Sprite(cachedTex)
-            sprite.width = size * layer.scale
-            sprite.height = size * layer.scale
-            sprite.alpha = layer.opacity
-            sprite.x = layer.x
-            sprite.y = layer.y
-            this.layerGraphics.set(layer.id, sprite)
-            ensureChildAt(container, sprite, index)
-            return
-          }
-
-          // Texture not cached — async load (live preview path)
-          const capturedLayerId = layer.id
-          const capturedSrc = layer.src
-          const capturedApp = this.app
-          const capturedScale = layer.scale
-          const capturedOpacity = layer.opacity
-          const capturedX = layer.x
-          const capturedY = layer.y
-          Assets.load<Texture>(layer.src).then((tex) => {
-            if (!capturedApp || !this.initialized) return
-            // Layer is no longer part of the active frame — discard
-            if (!this.activeLayerIds.has(capturedLayerId)) return
-            const sprite = new Sprite(tex)
-            sprite.width = size * capturedScale
-            sprite.height = size * capturedScale
-            sprite.alpha = capturedOpacity
-            sprite.x = capturedX
-            sprite.y = capturedY
-            this.layerGraphics.set(capturedLayerId, sprite)
-            if (this.layersContainer) this.layersContainer.addChild(sprite)
-            capturedApp.renderer.render(capturedApp.stage)
-          }).catch((err) => {
-            console.error(`[renderer] Failed to load midground texture: ${capturedSrc}`, err)
-            this.layerUrls.delete(capturedLayerId)
-          })
+        if (existingSprite && prevUrl === layer.src) {
+          // Sprite ready — just update transforms
+          existingSprite.width = size * layer.scale
+          existingSprite.height = size * layer.scale
+          existingSprite.alpha = layer.opacity
+          existingSprite.x = layer.x
+          existingSprite.y = layer.y
+          ensureChildAt(container, existingSprite, index)
           return
         }
-        // Texture already loaded — update transforms in place
-        const sprite = existingSprite
-        // scale: 1.0 = fill the canvas; scale: 1.5 = 150% of canvas size
-        sprite.width = size * layer.scale
-        sprite.height = size * layer.scale
-        sprite.alpha = layer.opacity
-        sprite.x = layer.x
-        sprite.y = layer.y
-        ensureChildAt(container, sprite, index)
+
+        if (!existingSprite && prevUrl === layer.src) {
+          // Load already in progress — don't attach another .then(), just wait
+          return
+        }
+
+        // URL changed or first load — start fresh
+        existingSprite?.destroy()
+        this.layerGraphics.delete(layer.id)
+        this.layerUrls.set(layer.id, layer.src)
+
+        const cachedTex = Assets.get<Texture>(layer.src)
+        if (cachedTex) {
+          const sprite = new Sprite(cachedTex)
+          sprite.width = size * layer.scale
+          sprite.height = size * layer.scale
+          sprite.alpha = layer.opacity
+          sprite.x = layer.x
+          sprite.y = layer.y
+          this.layerGraphics.set(layer.id, sprite)
+          ensureChildAt(container, sprite, index)
+          return
+        }
+
+        const capturedLayerId = layer.id
+        const capturedSrc = layer.src
+        const capturedApp = this.app
+        const capturedScale = layer.scale
+        const capturedOpacity = layer.opacity
+        const capturedX = layer.x
+        const capturedY = layer.y
+        Assets.load<Texture>(layer.src).then((tex) => {
+          if (!capturedApp || !this.initialized) return
+          if (!this.activeLayerIds.has(capturedLayerId)) return
+          // Another renderFrame may have already created the sprite — don't duplicate
+          if (this.layerGraphics.has(capturedLayerId)) return
+          const sprite = new Sprite(tex)
+          sprite.width = size * capturedScale
+          sprite.height = size * capturedScale
+          sprite.alpha = capturedOpacity
+          sprite.x = capturedX
+          sprite.y = capturedY
+          this.layerGraphics.set(capturedLayerId, sprite)
+          if (this.layersContainer) this.layersContainer.addChild(sprite)
+          capturedApp.renderer.render(capturedApp.stage)
+        }).catch((err) => {
+          console.error(`[renderer] Failed to load midground texture: ${capturedSrc}`, err)
+          this.layerUrls.delete(capturedLayerId)
+        })
         return
       }
 
