@@ -38,7 +38,7 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 const TEXTURE_COUNT = 11
-const SCALES = [0.8, 1.2]
+const SCALES = [1.0, 1.2, 1.5]
 
 function randOffset() { return Math.round((Math.random() * 40) - 20) }
 

@@ -218,7 +218,7 @@ export default function LeftPanel({
         />
         {midLayer.src && (
           <div style={{ marginTop: 16 }}>
-            <Slider label="Scale"    value={midLayer.scale} min={0.5} max={3}             step={0.05}            onChange={(v) => onLayerChange(midLayer.id, { scale: v })} />
+            <Slider label="Scale"    value={midLayer.scale} min={1}   max={2}   step={0.05} onChange={(v) => onLayerChange(midLayer.id, { scale: v })} />
             <Slider label="X offset" value={midLayer.x}     min={-outputSize / 2} max={outputSize / 2} step={1} unit="px" onChange={(v) => onLayerChange(midLayer.id, { x: v })} />
             <Slider label="Y offset" value={midLayer.y}                         min={-outputSize / 2} max={outputSize / 2} step={1} unit="px" onChange={(v) => onLayerChange(midLayer.id, { y: v })} />
           </div>
