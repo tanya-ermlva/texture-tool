@@ -40,8 +40,10 @@ function shuffle<T>(arr: T[]): T[] {
 
 function makeDefaultProject(): Project {
   const compositions = shuffle(COMPOSITIONS).slice(0, 3)
+  const bgColor = pick(BG_COLORS)
+  const xOffsets = [-200, 0, 200]
 
-  const frames: Frame[] = compositions.map((composition) => {
+  const frames: Frame[] = compositions.map((composition, i) => {
     const filterEntry: FilterEntry = { ...pick(RANDOM_FILTERS) }
     if (filterEntry.type === 'noise') filterEntry.seed = Math.random()
 
@@ -54,8 +56,8 @@ function makeDefaultProject(): Project {
     return {
       id: nanoid(6),
       layers: [
-        { id: nanoid(6), kind: 'background', color: pick(BG_COLORS) },
-        { id: nanoid(6), kind: 'midground',  src: null, label: '', opacity: 1, scale: 1, x: 0, y: 0 },
+        { id: nanoid(6), kind: 'background', color: bgColor },
+        { id: nanoid(6), kind: 'midground',  src: null, label: '', opacity: 1, scale: 1, x: xOffsets[i], y: 0 },
         gridLayer,
         { id: nanoid(6), kind: 'adjustment', filters: [filterEntry] },
       ],
