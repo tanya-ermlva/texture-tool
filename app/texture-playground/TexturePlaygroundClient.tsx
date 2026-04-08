@@ -337,7 +337,19 @@ export default function TexturePlaygroundClient() {
           onFilterChange={handleFilterChange}
           onRemoveFilter={handleRemoveFilter}
         />
-        <div className="mt-auto self-start pb-4">
+        <div className="mt-auto self-start pb-4 flex flex-col gap-3">
+          <div
+            className="group flex flex-row items-center gap-3 cursor-pointer px-2"
+            onClick={() => setProject(makeDefaultProject())}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && setProject(makeDefaultProject())}
+          >
+            <div className="bg-ink rounded-full size-6 xl:size-10 flex-shrink-0 group-hover:bg-pink transition-colors" />
+            <span className="font-sans text-display xl:text-display-lg font-normal text-ink leading-none group-hover:text-pink transition-colors">
+              ↺
+            </span>
+          </div>
           <PresetBar project={project} onLoad={(p) => setProject(p)} />
         </div>
       </div>
