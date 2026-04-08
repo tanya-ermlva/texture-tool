@@ -14,13 +14,13 @@ type Props = {
 }
 
 const SIZES: Project['outputSize'][] = [512, 1024, 2048]
-
-type VideoFormat = 'webm' | 'mp4' | 'png-seq'
+type VideoFormat = 'webm' | 'mp4' | 'png-seq' | 'png-frame'
 
 const FORMAT_LABELS: Record<VideoFormat, string> = {
-  'mp4': 'MP4',
-  'webm': 'WebM',
+  mp4: 'MP4',
+  webm: 'WebM',
   'png-seq': 'PNG sequence',
+  'png-frame': 'PNG frame',
 }
 
 export default function TopBar({
@@ -31,77 +31,61 @@ export default function TopBar({
   const [videoFormat, setVideoFormat] = useState<VideoFormat>('mp4')
   const [open, setOpen] = useState(false)
 
+  const shortLabel: Record<VideoFormat, string> = {
+    mp4: 'MP4',
+    webm: 'WebM',
+    'png-seq': 'PNG seq',
+    'png-frame': 'PNG frame',
+  }
+
   function triggerExport(fmt: VideoFormat) {
     setOpen(false)
     if (fmt === 'mp4') onExportMp4()
     else if (fmt === 'webm') onExportWebM()
-    else onExportPngSequence()
-  }
-
-  const shortLabel: Record<VideoFormat, string> = {
-    'mp4': 'MP4',
-    'webm': 'WebM',
-    'png-seq': 'PNG seq',
+    else if (fmt === 'png-seq') onExportPngSequence()
+    else onExportFrame()
   }
 
   return (
-    <div style={{
-      position: 'absolute', top: 0, right: 0,
-      padding: '20px 24px',
-      display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6,
-    }}>
-      {/* Single-frame PNG — small ghost */}
-      <button
-        onClick={onExportFrame}
-        disabled={exporting}
-        style={{
-          background: 'none', border: 'none', cursor: exporting ? 'wait' : 'pointer',
-          fontFamily: 'var(--font-geist)', fontSize: 12,
-          color: 'rgba(41,41,41,0.35)',
-          opacity: exporting ? 0.3 : 1,
-          padding: 0,
-        }}
-      >
-        PNG frame ↓
-      </button>
-
-      {/* Download video — big label, opens dropdown */}
-      <div style={{ position: 'relative' }}>
+    <div className="flex justify-end p-4">
+      <div className="relative">
+        {/* Main download button */}
         <button
           onClick={() => !exporting && setOpen(o => !o)}
-          style={{
-            background: 'none', border: 'none',
-            cursor: exporting ? 'wait' : 'pointer',
-            fontFamily: 'var(--font-geist)',
-            fontSize: 28,
-            fontWeight: 500,
-            color: exporting ? 'rgba(41,41,41,0.35)' : '#1a1a1a',
-            letterSpacing: '-0.02em',
-            padding: 0,
-            lineHeight: 1,
-          }}
+          className="group flex items-center gap-[0.08em] font-sans text-display font-normal text-ink hover:opacity-60 transition-opacity"
+          style={{ cursor: exporting ? 'wait' : 'pointer', opacity: exporting ? 0.4 : undefined }}
         >
-          {exporting ? 'Exporting…' : `Download ${shortLabel[videoFormat]} ↓`}
+          {exporting ? 'Exporting…' : `Download ${shortLabel[videoFormat]}`}
+          {!exporting && (
+            <svg width="32" height="32" viewBox="0 0 46 46" fill="none">
+              <path
+                d="M25.5762 36.4806C24.4312 38.5065 21.5688 38.5065 20.4238 36.4806L6.90298 12.5581C5.758 10.5323 7.18922 8 9.47919 8L36.5208 8C38.8108 8 40.242 10.5323 39.097 12.5581L25.5762 36.4806Z"
+                fill="#312E2E"
+              />
+            </svg>
+          )}
         </button>
 
+        {/* Dropdown */}
         {open && (
-          <div style={{
-            position: 'absolute',
-            top: 'calc(100% + 10px)',
-            right: 0,
-            background: '#fff',
-            border: '1px solid rgba(71,67,42,0.12)',
-            borderRadius: 14,
-            boxShadow: '0 6px 24px rgba(0,0,0,0.10)',
-            zIndex: 50,
-            overflow: 'hidden',
-            minWidth: 180,
-          }}>
-            {/* Format */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 'calc(100% + 10px)',
+              right: 0,
+              background: '#fff',
+              border: '1px solid rgba(71,67,42,0.12)',
+              borderRadius: 14,
+              boxShadow: '0 6px 24px rgba(0,0,0,0.10)',
+              zIndex: 50,
+              overflow: 'hidden',
+              minWidth: 180,
+            }}
+          >
             <div style={{ padding: '10px 14px 6px', fontFamily: 'var(--font-geist)', fontSize: 11, color: '#aaa', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
               Format
             </div>
-            {(['mp4', 'webm', 'png-seq'] as VideoFormat[]).map(fmt => (
+            {(['mp4', 'webm', 'png-seq', 'png-frame'] as VideoFormat[]).map(fmt => (
               <button
                 key={fmt}
                 onClick={() => { setVideoFormat(fmt); triggerExport(fmt) }}
@@ -119,7 +103,6 @@ export default function TopBar({
               </button>
             ))}
 
-            {/* Size */}
             <div style={{ borderTop: '1px solid rgba(71,67,42,0.08)', padding: '10px 14px 6px', fontFamily: 'var(--font-geist)', fontSize: 11, color: '#aaa', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
               Size
             </div>

@@ -126,20 +126,13 @@ export default function PresetBar({ project, onLoad }: Props) {
 
   return (
     <>
-      {/* ▼ 01 trigger */}
+      {/* ● 01 trigger */}
       <button
         onClick={() => setOpen(true)}
-        style={{
-          background: 'none', border: 'none', padding: 0,
-          cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: 4,
-          fontFamily: 'var(--font-geist-mono)',
-        }}
+        className="group flex flex-row items-center gap-3 rounded-[24px] cursor-pointer px-2 pb-1 border-none bg-transparent hover:opacity-60 transition-opacity"
       >
-        <span style={{ fontSize: 11, color: 'rgba(41,41,41,0.4)', lineHeight: 1 }}>▼</span>
-        <span style={{
-          fontSize: 22, fontWeight: 500, color: '#1a1a1a',
-          letterSpacing: '-0.02em', lineHeight: 1,
-        }}>
+        <div className="bg-ink rounded-full size-5 flex-shrink-0" />
+        <span className="font-sans text-display font-normal text-ink leading-none">
           {displayNum}
         </span>
       </button>

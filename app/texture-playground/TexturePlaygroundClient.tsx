@@ -7,6 +7,7 @@ import LeftPanel from './components/LeftPanel'
 import TopBar from './components/TopBar'
 import Timeline from './components/Timeline'
 import PresetBar from './components/PresetBar'
+import MetaData from './components/MetaData'
 import { resolveFrame } from './lib/resolve'
 import { usePlayback } from './lib/playback'
 import { exportWebMDeterministic, exportFramePng, exportMp4, exportPngSequence } from './lib/export'
@@ -285,75 +286,29 @@ export default function TexturePlaygroundClient() {
     }
   }
 
-  // The canvas and timeline share the same CSS-computed size so they align:
-  // width = min(canvas-area-width, available-height) using CSS min()
-  // Left panel is 280px; timeline row is 88px; top padding is 20px
-  const S = 'min(calc(100vw - 280px - 48px), calc(100vh - 88px - 40px))'
-
   return (
-    <div
-      style={{
-        background: '#f2f2ec',
-        height: '100vh',
-        display: 'flex',
-        overflow: 'hidden',
-      }}
-    >
-      <LeftPanel
-        snapshot={snapshot}
-        outputSize={project.outputSize}
-        onLayerChange={handleLayerChange}
-        onAddGridLayer={() => handleAddGridLayer('dot-grid')}
-        onDeleteLayer={handleDeleteLayer}
-        onAddFilter={handleAddFilter}
-        onFilterChange={handleFilterChange}
-        onRemoveFilter={handleRemoveFilter}
-      />
+    <div className="grid grid-cols-[378px_1fr] w-screen h-screen p-4 gap-2 bg-stone">
 
-      {/* Canvas area — grid: row1=canvas, row2=timeline */}
-      <div style={{
-        flex: 1,
-        display: 'grid',
-        gridTemplateRows: '1fr 88px',
-        alignItems: 'center',
-        justifyItems: 'center',
-        padding: '20px 24px 0',
-        position: 'relative',
-      }}>
-        {/* Row 1: canvas square */}
-        <div style={{
-          width: S, height: S,
-          borderRadius: 28,
-          overflow: 'hidden',
-          flexShrink: 0,
-          position: 'relative',
-        }}>
-          <CanvasPreview
-            snapshot={snapshot}
-            outputSize={project.outputSize}
-            onAdapterReady={(a) => { adapterRef.current = a; setAdapter(a) }}
-          />
+      {/* Left column — white bg, scrollable */}
+      <div className="flex flex-col h-full bg-white rounded-[28px] overflow-hidden px-4">
+        <LeftPanel
+          snapshot={snapshot}
+          outputSize={project.outputSize}
+          onLayerChange={handleLayerChange}
+          onAddGridLayer={() => handleAddGridLayer('dot-grid')}
+          onDeleteLayer={handleDeleteLayer}
+          onAddFilter={handleAddFilter}
+          onFilterChange={handleFilterChange}
+          onRemoveFilter={handleRemoveFilter}
+        />
+        {/* PresetBar anchored to bottom of left column */}
+        <div className="mt-auto py-4">
+          <PresetBar project={project} onLoad={(p) => setProject(p)} />
         </div>
+      </div>
 
-        {/* Row 2: timeline (same width S) */}
-        <div style={{ width: S, height: '100%' }}>
-          <Timeline
-            frames={project.frames}
-            activeFrameId={project.activeFrameId}
-            fps={project.fps}
-            playing={playing}
-            onSelectFrame={(id) => setProject(p => ({ ...p, activeFrameId: id }))}
-            onDeleteFrame={handleDeleteFrame}
-            onDurationChange={handleDurationChange}
-            onFpsChange={(fps) => setProject(p => ({ ...p, fps }))}
-            onPlay={() => setPlaying(true)}
-            onStop={() => setPlaying(false)}
-            onAddFrame={handleAddToTimeline}
-            onReorderFrames={handleReorderFrames}
-          />
-        </div>
-
-        {/* TopBar floats top-right */}
+      {/* Right column — canvas + timeline */}
+      <div className="flex flex-col h-full bg-stone">
         <TopBar
           outputSize={project.outputSize}
           onSizeChange={(s) => setProject(p => ({ ...p, outputSize: s }))}
@@ -364,15 +319,38 @@ export default function TexturePlaygroundClient() {
           exporting={exporting}
         />
 
-        {/* PresetBar anchored bottom-left, overlays timeline's left spacer */}
-        <div style={{
-          position: 'absolute', bottom: 0, left: 24,
-          height: 88,
-          display: 'flex', alignItems: 'center',
-          zIndex: 10,
-        }}>
-          <PresetBar project={project} onLoad={(p) => setProject(p)} />
+        {/* Canvas — square, centered, fills remaining height */}
+        <div className="relative flex-1 flex items-center justify-center p-4 min-h-0">
+          <div className="aspect-square h-full max-h-full rounded-[24px] overflow-hidden">
+            <CanvasPreview
+              snapshot={snapshot}
+              outputSize={project.outputSize}
+              onAdapterReady={(a) => { adapterRef.current = a; setAdapter(a) }}
+            />
+          </div>
+          <div className="absolute bottom-6 right-4">
+            <MetaData
+              fps={project.fps}
+              framesEach={activeFrame.durationFrames}
+              compositions={project.frames.length}
+            />
+          </div>
         </div>
+
+        <Timeline
+          frames={project.frames}
+          activeFrameId={project.activeFrameId}
+          fps={project.fps}
+          playing={playing}
+          onSelectFrame={(id) => setProject(p => ({ ...p, activeFrameId: id }))}
+          onDeleteFrame={handleDeleteFrame}
+          onDurationChange={handleDurationChange}
+          onFpsChange={(fps) => setProject(p => ({ ...p, fps }))}
+          onPlay={() => setPlaying(true)}
+          onStop={() => setPlaying(false)}
+          onAddFrame={handleAddToTimeline}
+          onReorderFrames={handleReorderFrames}
+        />
       </div>
     </div>
   )
