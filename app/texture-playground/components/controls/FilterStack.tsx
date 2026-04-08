@@ -13,19 +13,14 @@ type Props = {
 }
 
 const FILTER_DEFAULTS: Record<FilterType, FilterEntry> = {
-  noise:        { type: 'noise',        enabled: true, intensity: 0.4 },
-  blur:         { type: 'blur',         enabled: true, strength: 4 },
-  pixelate:     { type: 'pixelate',     enabled: true, size: 8 },
-  displacement: { type: 'displacement', enabled: true, scale: 30 },
+  noise:        { type: 'noise',        enabled: true, intensity: 0.35, seed: Math.random(), grainSize: 1 },
   rgbsplit:     { type: 'rgbsplit',     enabled: true, amount: 6 },
-  colormatrix:  { type: 'colormatrix',  enabled: true, brightness: 1, contrast: 1, saturation: 1, hue: 0, invert: false },
-  halftone:     { type: 'halftone',     enabled: true, scale: 5, angle: 45 },
+  displacement: { type: 'displacement', enabled: true, scale: 30 },
   glow:         { type: 'glow',         enabled: true, distance: 10, strength: 2, color: '#b2c248' },
 }
 
 const FILTER_LABELS: Record<FilterType, string> = {
-  noise: 'Noise', blur: 'Blur', pixelate: 'Pixelate', displacement: 'Displace',
-  rgbsplit: 'RGB', colormatrix: 'Colour', halftone: 'Halftone', glow: 'Glow',
+  noise: 'Grain', rgbsplit: 'RGB', displacement: 'Distort', glow: 'Glow',
 }
 
 const ALL_FILTERS = Object.keys(FILTER_DEFAULTS) as FilterType[]
@@ -36,8 +31,9 @@ export default function FilterStack({ layer, onAdd, onChange, onRemove }: Props)
 
   function handleTileClick(type: FilterType) {
     if (activeMap.has(type)) {
-      // Already active — toggle expand/collapse
-      setExpanded(prev => prev === type ? null : type)
+      // Already active — remove it (deselect)
+      onRemove(type)
+      if (expanded === type) setExpanded(null)
     } else {
       // Not active — add it and expand
       onAdd(FILTER_DEFAULTS[type])

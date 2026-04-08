@@ -50,18 +50,12 @@ export type MidgroundLayer = {
 
 // ── Filter types ──────────────────────────────────────────────────────────────
 
-export type FilterType =
-  | 'noise' | 'blur' | 'pixelate' | 'displacement'
-  | 'rgbsplit' | 'colormatrix' | 'halftone' | 'glow'
+export type FilterType = 'noise' | 'rgbsplit' | 'displacement' | 'glow'
 
 export type FilterEntry =
-  | { type: 'noise';        enabled: boolean; intensity: number; seed: number }
-  | { type: 'blur';         enabled: boolean; strength: number }
-  | { type: 'pixelate';     enabled: boolean; size: number }
-  | { type: 'displacement'; enabled: boolean; scale: number }
+  | { type: 'noise';        enabled: boolean; intensity: number; seed: number; grainSize: number }
   | { type: 'rgbsplit';     enabled: boolean; amount: number }
-  | { type: 'colormatrix';  enabled: boolean; brightness: number; contrast: number; saturation: number; hue: number; invert: boolean }
-  | { type: 'halftone';     enabled: boolean; scale: number; angle: number }
+  | { type: 'displacement'; enabled: boolean; scale: number }
   | { type: 'glow';         enabled: boolean; distance: number; strength: number; color: string }
 
 export type AdjustmentLayer = {
@@ -120,6 +114,8 @@ export type FrameSnapshot = {
 export interface RendererAdapter {
   init(host: HTMLElement, size: number): Promise<void>
   renderFrame(snapshot: FrameSnapshot): void
+  preWarmTextures(urls: string[]): Promise<void>
+  flushPendingLoads(): Promise<void>
   setSize(size: number): void
   exportPng(): Promise<Blob>
   destroy(): void

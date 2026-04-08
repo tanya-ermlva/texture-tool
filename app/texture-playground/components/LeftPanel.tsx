@@ -3,25 +3,24 @@
 import { useState } from 'react'
 import type {
   FrameSnapshot, LayerOverride, FilterEntry, FilterType,
-  BackgroundLayer, MidgroundLayer, GridLayer, AdjustmentLayer,
+  BackgroundLayer, MidgroundLayer, GridLayer, AdjustmentLayer, CompositionType,
 } from '../lib/types'
 import ColorPicker from './controls/ColorPicker'
 import MidgroundPicker from './controls/MidgroundPicker'
 import FilterStack from './controls/FilterStack'
 import CompositionPicker from './controls/CompositionPicker'
-import PresetBar from './PresetBar'
-import type { Project } from '../lib/types'
+import CompositionIcon from './controls/CompositionIcon'
+import FilterIcon from './controls/FilterIcon'
 
 type Props = {
   snapshot: FrameSnapshot
   outputSize: number
   onLayerChange: (layerId: string, override: LayerOverride) => void
   onAddGridLayer: () => void
+  onDeleteLayer: (layerId: string) => void
   onAddFilter: (entry: FilterEntry) => void
   onFilterChange: (filterType: FilterType, changes: Partial<FilterEntry>) => void
   onRemoveFilter: (filterType: FilterType) => void
-  project: Project
-  onLoadPreset: (project: Project) => void
 }
 
 type SliderProps = {
@@ -50,28 +49,85 @@ function Slider({ label, value, min, max, step, unit = '', onChange }: SliderPro
   )
 }
 
-type SectionProps = {
-  title: string
+const EMPTY_SWATCH = '#d4d4d0'
+
+function Swatch({ color }: { color: string }) {
+  return (
+    <div style={{ width: 34, height: 34, borderRadius: 10, background: color, flexShrink: 0 }} />
+  )
+}
+
+// Texture swatch: composition icon on dark background
+function TextureSwatchIcon({ composition }: { composition: CompositionType }) {
+  return (
+    <div style={{
+      width: 34, height: 34, borderRadius: 10,
+      background: '#1a1a1a', flexShrink: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <CompositionIcon type={composition} size={18} color="#ffffff" />
+    </div>
+  )
+}
+
+// Filter swatch: filter icon(s) on lime background
+function FilterSwatch({ filters }: { filters: FilterEntry[] }) {
+  const active = filters.filter(f => f.enabled)
+  if (active.length === 0) return <Swatch color={EMPTY_SWATCH} />
+  const shown = active.slice(0, 4)
+  const single = shown.length === 1
+  return (
+    <div style={{
+      width: 34, height: 34, borderRadius: 10,
+      background: '#b2c248', flexShrink: 0,
+      display: 'flex', flexWrap: 'wrap',
+      alignItems: 'center', justifyContent: 'center',
+      gap: single ? 0 : 3,
+      padding: single ? 0 : 6,
+    }}>
+      {shown.map(f => (
+        <FilterIcon key={f.type} type={f.type} size={single ? 18 : 11} color="#1a1a1a" />
+      ))}
+    </div>
+  )
+}
+
+// Image swatch: thumbnail or empty
+function ImageSwatch({ src }: { src: string | null }) {
+  if (!src) return <Swatch color={EMPTY_SWATCH} />
+  return (
+    <img
+      src={src} alt=""
+      style={{ width: 34, height: 34, borderRadius: 10, objectFit: 'cover', flexShrink: 0, display: 'block' }}
+    />
+  )
+}
+
+type RowProps = {
+  label: string
   open: boolean
   onToggle: () => void
+  swatch: React.ReactNode
   children: React.ReactNode
 }
 
-function Section({ title, open, onToggle, children }: SectionProps) {
+function Row({ label, open, onToggle, swatch, children }: RowProps) {
   return (
-    <div style={{ background: 'rgba(98,90,34,0.06)', borderRadius: 12, overflow: 'hidden' }}>
+    <div style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
       <div
         onClick={onToggle}
         style={{
-          padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          cursor: 'pointer', userSelect: 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '14px 0', cursor: 'pointer', userSelect: 'none',
         }}
       >
-        <span style={{ fontFamily: 'var(--font-geist)', fontSize: 18, color: '#292929' }}>{title}</span>
-        <span style={{ fontSize: 22, color: '#292929', lineHeight: 1 }}>{open ? '–' : '+'}</span>
+        <span style={{ fontFamily: 'var(--font-geist)', fontSize: 17, color: '#1a1a1a' }}>
+          {label}
+        </span>
+        {swatch}
       </div>
       {open && (
-        <div style={{ padding: '0 16px 24px' }}>
+        <div style={{ paddingBottom: 20 }}>
           {children}
         </div>
       )}
@@ -80,45 +136,58 @@ function Section({ title, open, onToggle, children }: SectionProps) {
 }
 
 export default function LeftPanel({
-  snapshot, outputSize, onLayerChange, onAddGridLayer,
+  snapshot, outputSize, onLayerChange, onAddGridLayer, onDeleteLayer,
   onAddFilter, onFilterChange, onRemoveFilter,
-  project, onLoadPreset,
 }: Props) {
-  const [open, setOpen] = useState({ filters: false, texture: false, midground: true, colour: true })
+  const [open, setOpen] = useState<'filter' | 'texture' | 'image' | 'colour' | null>(null)
 
-  const bgLayer = snapshot.layers.find(l => l.kind === 'background') as BackgroundLayer
-  const midLayer = snapshot.layers.find(l => l.kind === 'midground') as MidgroundLayer
-  const gridLayer = snapshot.layers.find(l => l.kind === 'grid') as GridLayer | undefined
+  const bgLayer  = snapshot.layers.find(l => l.kind === 'background') as BackgroundLayer
+  const midLayer = snapshot.layers.find(l => l.kind === 'midground')  as MidgroundLayer
+  const gridLayer = snapshot.layers.find(l => l.kind === 'grid')      as GridLayer | undefined
   const adjLayer = snapshot.layers.find(l => l.kind === 'adjustment') as AdjustmentLayer
 
-  function toggle(k: keyof typeof open) {
-    setOpen(o => {
-      const wasOpen = o[k]
-      return { filters: false, texture: false, midground: false, colour: false, [k]: !wasOpen }
-    })
+  function toggle(k: 'filter' | 'texture' | 'image' | 'colour') {
+    setOpen(prev => prev === k ? null : k)
   }
 
   return (
     <div style={{
-      width: 300, padding: 8, display: 'flex', flexDirection: 'column', gap: 4,
-      overflowY: 'auto', flexShrink: 0, height: '100vh', boxSizing: 'border-box',
+      width: 280, padding: '0 20px',
+      display: 'flex', flexDirection: 'column',
+      flexShrink: 0, height: '100vh', boxSizing: 'border-box',
+      background: '#fff', overflowY: 'auto',
     }}>
+      <div style={{ paddingTop: 24 }} />
 
-      <Section title="Filters" open={open.filters} onToggle={() => toggle('filters')}>
+      <Row
+        label="Filter"
+        open={open === 'filter'}
+        onToggle={() => toggle('filter')}
+        swatch={<FilterSwatch filters={adjLayer.filters} />}
+      >
         <FilterStack
           layer={adjLayer}
           onAdd={onAddFilter}
           onChange={onFilterChange}
           onRemove={onRemoveFilter}
         />
-      </Section>
+      </Row>
 
-      <Section title="Texture" open={open.texture} onToggle={() => toggle('texture')}>
+      <Row
+        label="Texture"
+        open={open === 'texture'}
+        onToggle={() => toggle('texture')}
+        swatch={gridLayer
+          ? <TextureSwatchIcon composition={gridLayer.composition} />
+          : <Swatch color={EMPTY_SWATCH} />
+        }
+      >
         {gridLayer ? (
           <div>
             <CompositionPicker
               value={gridLayer.composition}
               onChange={(c) => onLayerChange(gridLayer.id, { composition: c })}
+              onDeselect={() => onDeleteLayer(gridLayer.id)}
             />
             <div style={{ height: 16 }} />
             <Slider label="Spacing" value={gridLayer.spacing} min={4} max={120} step={1} unit="px" onChange={(v) => onLayerChange(gridLayer.id, { spacing: v })} />
@@ -148,9 +217,14 @@ export default function LeftPanel({
             }}
           >+ Add texture layer</button>
         )}
-      </Section>
+      </Row>
 
-      <Section title="Midground Texture" open={open.midground} onToggle={() => toggle('midground')}>
+      <Row
+        label="Image"
+        open={open === 'image'}
+        onToggle={() => toggle('image')}
+        swatch={<ImageSwatch src={midLayer.src} />}
+      >
         <MidgroundPicker
           layer={midLayer}
           onChange={(changes) => onLayerChange(midLayer.id, changes)}
@@ -161,21 +235,22 @@ export default function LeftPanel({
         />
         {midLayer.src && (
           <div style={{ marginTop: 16 }}>
-            <Slider label="Scale" value={midLayer.scale} min={0.5} max={3} step={0.05} onChange={(v) => onLayerChange(midLayer.id, { scale: v })} />
-            <Slider label="Opacity" value={Math.round(midLayer.opacity * 100)} min={0} max={100} step={1} unit="%" onChange={(v) => onLayerChange(midLayer.id, { opacity: v / 100 })} />
-            <Slider label="X offset" value={midLayer.x} min={-outputSize / 2} max={outputSize / 2} step={1} unit="px" onChange={(v) => onLayerChange(midLayer.id, { x: v })} />
-            <Slider label="Y offset" value={midLayer.y} min={-outputSize / 2} max={outputSize / 2} step={1} unit="px" onChange={(v) => onLayerChange(midLayer.id, { y: v })} />
+            <Slider label="Scale"   value={midLayer.scale}                      min={0.5} max={3}             step={0.05} onChange={(v) => onLayerChange(midLayer.id, { scale: v })} />
+            <Slider label="Opacity" value={Math.round(midLayer.opacity * 100)}  min={0}   max={100}           step={1}    unit="%" onChange={(v) => onLayerChange(midLayer.id, { opacity: v / 100 })} />
+            <Slider label="X offset" value={midLayer.x}                         min={-outputSize / 2} max={outputSize / 2} step={1} unit="px" onChange={(v) => onLayerChange(midLayer.id, { x: v })} />
+            <Slider label="Y offset" value={midLayer.y}                         min={-outputSize / 2} max={outputSize / 2} step={1} unit="px" onChange={(v) => onLayerChange(midLayer.id, { y: v })} />
           </div>
         )}
-      </Section>
+      </Row>
 
-      <Section title="Colour bg" open={open.colour} onToggle={() => toggle('colour')}>
+      <Row
+        label="Colour"
+        open={open === 'colour'}
+        onToggle={() => toggle('colour')}
+        swatch={<Swatch color={bgLayer.color} />}
+      >
         <ColorPicker value={bgLayer.color} onChange={(color) => onLayerChange(bgLayer.id, { color })} />
-      </Section>
-
-      <div style={{ flex: 1 }} />
-      <PresetBar project={project} onLoad={onLoadPreset} />
-
+      </Row>
     </div>
   )
 }

@@ -8,7 +8,6 @@ type Props = {
   snapshot: FrameSnapshot
   outputSize: 512 | 1024 | 2048
   onAdapterReady: (adapter: RendererAdapter) => void
-  frameLabel: string
 }
 
 export default function CanvasPreview({ snapshot, outputSize, onAdapterReady }: Props) {
@@ -39,14 +38,9 @@ export default function CanvasPreview({ snapshot, outputSize, onAdapterReady }: 
   }, [snapshot])
 
   return (
-    <div style={{
-      width: '100%', height: '100%',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      <canvas
-        ref={canvasRef}
-        style={{ maxWidth: '85%', maxHeight: '85%', objectFit: 'contain', borderRadius: 32 }}
-      />
-    </div>
+    <canvas
+      ref={canvasRef}
+      style={{ width: '100%', height: '100%', display: 'block' }}
+    />
   )
 }

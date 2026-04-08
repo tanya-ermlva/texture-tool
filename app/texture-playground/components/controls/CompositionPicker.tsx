@@ -15,9 +15,10 @@ const COMPOSITIONS: { id: CompositionType; label: string }[] = [
 type Props = {
   value: CompositionType
   onChange: (c: CompositionType) => void
+  onDeselect?: () => void
 }
 
-export default function CompositionPicker({ value, onChange }: Props) {
+export default function CompositionPicker({ value, onChange, onDeselect }: Props) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3 }}>
       {COMPOSITIONS.map(({ id, label }) => {
@@ -25,7 +26,7 @@ export default function CompositionPicker({ value, onChange }: Props) {
         return (
           <button
             key={id}
-            onClick={() => onChange(id)}
+            onClick={() => active && onDeselect ? onDeselect() : onChange(id)}
             style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
               padding: '8px 4px 6px',

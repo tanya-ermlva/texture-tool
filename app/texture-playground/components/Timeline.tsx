@@ -24,111 +24,136 @@ export default function Timeline({
   onPlay, onStop, onAddFrame, onReorderFrames,
 }: Props) {
   const [dragOverId, setDragOverId] = useState<string | null>(null)
+
   return (
     <div style={{
-      position: 'absolute', bottom: 18, left: '50%', transform: 'translateX(-50%)',
-      background: 'rgba(98,90,34,0.06)', borderRadius: 20,
-      padding: '18px 24px 8px',
-      display: 'flex', alignItems: 'flex-start', gap: 6,
-      whiteSpace: 'nowrap',
+      width: '100%', height: '100%',
+      display: 'flex', alignItems: 'center',
     }}>
-      {/* Frame thumbnails */}
-      {frames.map((frame) => (
-        <div key={frame.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-          <div
-            draggable={true}
-            onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('frameId', frame.id) }}
-            onDragOver={(e) => { e.preventDefault(); setDragOverId(frame.id) }}
-            onDragLeave={() => setDragOverId(null)}
-            onDragEnd={() => setDragOverId(null)}
-            onDrop={(e) => { e.preventDefault(); const fromId = e.dataTransfer.getData('frameId'); if (fromId !== frame.id) onReorderFrames(fromId, frame.id); setDragOverId(null) }}
-            onClick={() => onSelectFrame(frame.id)}
-            style={{
-              width: 54, height: 54, borderRadius: 12, cursor: 'pointer',
-              border: `1px solid ${activeFrameId === frame.id ? '#d1e043' : 'rgba(71,67,42,0.2)'}`,
-              outline: dragOverId === frame.id ? '2px solid #d1e043' : undefined,
-              position: 'relative', flexShrink: 0, overflow: 'hidden',
-              background: (frame.layers.find(l => l.kind === 'background') as BackgroundLayer | undefined)?.color ?? '#444625',
-            }}
-          >
-            {(() => {
-              const mid = frame.layers.find(l => l.kind === 'midground') as MidgroundLayer | undefined
-              return mid?.src ? (
-                <img
-                  src={mid.src}
-                  alt=""
-                  style={{
-                    position: 'absolute', inset: 0,
-                    width: '100%', height: '100%',
-                    objectFit: 'cover', opacity: mid.opacity,
-                    mixBlendMode: 'multiply',
-                  }}
-                />
-              ) : null
-            })()}
-            {frames.length > 1 && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onDeleteFrame(frame.id) }}
-                style={{
-                  position: 'absolute', top: -4, right: -4,
-                  width: 14, height: 14, borderRadius: '50%',
-                  background: '#f7f7f2', border: '1px solid rgba(71,67,42,0.2)',
-                  color: '#72726e', fontSize: 9, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  padding: 0, lineHeight: 1,
+      {/* Left spacer — reserved for PresetBar overlay */}
+      <div style={{ flex: '0 0 100px' }} />
+
+      {/* Center: frame pills */}
+      <div style={{
+        flex: 1, display: 'flex', alignItems: 'center',
+        justifyContent: 'center', gap: 6, overflow: 'hidden',
+      }}>
+        {frames.map((frame) => {
+          const bg = (frame.layers.find(l => l.kind === 'background') as BackgroundLayer | undefined)?.color ?? '#444625'
+          const mid = frame.layers.find(l => l.kind === 'midground') as MidgroundLayer | undefined
+          const active = frame.id === activeFrameId
+
+          return (
+            <div
+              key={frame.id}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, flexShrink: 0 }}
+            >
+              <div
+                draggable
+                onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('frameId', frame.id) }}
+                onDragOver={(e) => { e.preventDefault(); setDragOverId(frame.id) }}
+                onDragLeave={() => setDragOverId(null)}
+                onDragEnd={() => setDragOverId(null)}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  const fromId = e.dataTransfer.getData('frameId')
+                  if (fromId !== frame.id) onReorderFrames(fromId, frame.id)
+                  setDragOverId(null)
                 }}
-              >×</button>
-            )}
-          </div>
-          <input
-            type="number"
-            value={frame.durationFrames}
-            min={1} max={120}
-            onChange={(e) => onDurationChange(frame.id, Math.max(1, Number(e.target.value)))}
-            style={{
-              width: 54, background: 'transparent', border: 'none',
-              fontFamily: 'var(--font-geist-mono)', fontSize: 9, color: '#72726e',
-              textAlign: 'center', padding: 0,
-            }}
-            title="Duration in frames"
-          />
-        </div>
-      ))}
+                onClick={() => onSelectFrame(frame.id)}
+                style={{
+                  width: 54, height: 54,
+                  borderRadius: 16,
+                  cursor: 'pointer',
+                  border: `1.5px solid ${active ? '#d1e043' : 'rgba(71,67,42,0.18)'}`,
+                  outline: dragOverId === frame.id ? '2px solid #d1e043' : undefined,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  background: bg,
+                }}
+              >
+                {mid?.src && (
+                  <img
+                    src={mid.src}
+                    alt=""
+                    style={{
+                      position: 'absolute', inset: 0,
+                      width: '100%', height: '100%',
+                      objectFit: 'cover',
+                      opacity: mid.opacity,
+                      mixBlendMode: 'multiply',
+                    }}
+                  />
+                )}
+                {frames.length > 1 && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onDeleteFrame(frame.id) }}
+                    style={{
+                      position: 'absolute', top: -4, right: -4,
+                      width: 14, height: 14, borderRadius: '50%',
+                      background: '#f7f7f2', border: '1px solid rgba(71,67,42,0.2)',
+                      color: '#72726e', fontSize: 9, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      padding: 0, lineHeight: 1,
+                    }}
+                  >×</button>
+                )}
+              </div>
+              <input
+                type="number"
+                value={frame.durationFrames}
+                min={1} max={120}
+                onChange={(e) => onDurationChange(frame.id, Math.max(1, Number(e.target.value)))}
+                style={{
+                  width: 54, background: 'transparent', border: 'none',
+                  fontFamily: 'var(--font-geist-mono)', fontSize: 9, color: '#72726e',
+                  textAlign: 'center', padding: 0,
+                }}
+                title="Duration in frames"
+              />
+            </div>
+          )
+        })}
 
-      {/* Add frame button */}
-      <button
-        onClick={onAddFrame}
-        style={{
-          width: 36, height: 36, borderRadius: 12, border: 'none', cursor: 'pointer',
-          background: '#f7f7f2', color: '#292929', fontSize: 22,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flexShrink: 0, alignSelf: 'center',
-          opacity: frames.length >= 5 ? 0.3 : 1,
-          pointerEvents: frames.length >= 5 ? 'none' : 'auto',
-        }}
-      >+</button>
+        <button
+          onClick={onAddFrame}
+          style={{
+            width: 36, height: 36, borderRadius: 12, border: 'none', cursor: 'pointer',
+            background: 'rgba(98,90,34,0.07)', color: '#292929', fontSize: 22,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+            opacity: frames.length >= 8 ? 0.3 : 1,
+            pointerEvents: frames.length >= 8 ? 'none' : 'auto',
+          }}
+        >+</button>
+      </div>
 
-      {/* fps + play */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, alignSelf: 'center', marginLeft: 4 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ fontFamily: 'var(--font-geist-mono)', fontSize: 9, color: '#72726e' }}>fps</span>
-          <input
-            type="number" value={fps} min={1} max={60}
-            onChange={(e) => onFpsChange(Math.max(1, Math.min(60, Number(e.target.value))))}
-            style={{
-              width: 30, background: 'transparent', border: 'none',
-              fontFamily: 'var(--font-geist-mono)', fontSize: 10, color: '#292929',
-              textAlign: 'center', padding: 0,
-            }}
-          />
-        </div>
+      {/* Right: fps + play */}
+      <div style={{
+        flex: '0 0 100px',
+        display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8,
+      }}>
+        <select
+          value={fps}
+          onChange={(e) => onFpsChange(Number(e.target.value))}
+          style={{
+            background: 'transparent', border: 'none',
+            fontFamily: 'var(--font-geist-mono)', fontSize: 11, color: 'rgba(41,41,41,0.45)',
+            cursor: 'pointer', padding: 0, appearance: 'none', WebkitAppearance: 'none',
+          }}
+        >
+          {[12, 24, 30, 60].map(f => (
+            <option key={f} value={f}>{f} fps</option>
+          ))}
+        </select>
+
         <button
           onClick={playing ? onStop : onPlay}
           style={{
-            width: 64, height: 64, borderRadius: '50%',
-            background: '#b2c248', color: '#292929', border: 'none',
+            width: 44, height: 44, borderRadius: '50%',
+            background: '#1a1a1a', color: '#f7f7f2', border: 'none',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 16, cursor: 'pointer', flexShrink: 0,
+            fontSize: 12, cursor: 'pointer', flexShrink: 0,
           }}
         >
           {playing ? '■' : '▶'}

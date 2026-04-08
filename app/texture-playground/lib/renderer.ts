@@ -18,6 +18,7 @@ export class PixiRenderer implements RendererAdapter {
   private initialized = false
   private layerGraphics = new Map<string, Graphics | Sprite>()
   private layerUrls = new Map<string, string>()
+  private pendingLoads = new Map<string, Promise<void>>()
   private size = 512
   private layersContainer: Container | null = null
   private displacementSprite: Sprite | null = null
@@ -114,14 +115,16 @@ export class PixiRenderer implements RendererAdapter {
 
       if (layer.kind === 'midground') {
         if (!layer.src) {
-          // Nothing selected — remove any existing sprite for this layer
+          // Nothing selected — remove any existing sprite and clear the URL so
+          // any in-flight Assets.load .then() callback fails its stale-check
+          // and does not add the sprite after the user has already cleared it.
           const existing = this.layerGraphics.get(layer.id)
           if (existing) {
             container.removeChild(existing)
             existing.destroy()
             this.layerGraphics.delete(layer.id)
-            this.layerUrls.delete(layer.id)
           }
+          this.layerUrls.delete(layer.id)
           return
         }
         const existingSprite = this.layerGraphics.get(layer.id) as Sprite | undefined
@@ -129,10 +132,25 @@ export class PixiRenderer implements RendererAdapter {
         if (!existingSprite || prevUrl !== layer.src) {
           existingSprite?.destroy()
           this.layerGraphics.delete(layer.id)
-          // Mark this URL as "loading" immediately so the .then() stale-check works
           this.layerUrls.set(layer.id, layer.src)
-          // Assets.load is the correct PixiJS v8 API for async texture loading.
-          // It caches by URL so duplicate calls return the same Promise/Texture.
+
+          // Fast path: texture already in Assets cache (pre-warmed for export,
+          // or previously loaded for this URL in another layer/frame). Create
+          // the sprite synchronously so renderFrame is fully sync during export.
+          const cachedTex = Assets.get<Texture>(layer.src)
+          if (cachedTex) {
+            const sprite = new Sprite(cachedTex)
+            sprite.width = size * layer.scale
+            sprite.height = size * layer.scale
+            sprite.alpha = layer.opacity
+            sprite.x = layer.x
+            sprite.y = layer.y
+            this.layerGraphics.set(layer.id, sprite)
+            ensureChildAt(container, sprite, index)
+            return
+          }
+
+          // Texture not cached — async load (live preview path)
           const capturedLayerId = layer.id
           const capturedSrc = layer.src
           const capturedApp = this.app
@@ -140,7 +158,7 @@ export class PixiRenderer implements RendererAdapter {
           const capturedOpacity = layer.opacity
           const capturedX = layer.x
           const capturedY = layer.y
-          Assets.load<Texture>(layer.src).then((tex) => {
+          const loadPromise = Assets.load<Texture>(layer.src).then((tex) => {
             if (!capturedApp || !this.initialized) return
             // If the user switched to a different src while we were loading, discard
             if (this.layerUrls.get(capturedLayerId) !== capturedSrc) return
@@ -161,7 +179,10 @@ export class PixiRenderer implements RendererAdapter {
             if (this.layerUrls.get(capturedLayerId) === capturedSrc) {
               this.layerUrls.delete(capturedLayerId)
             }
+          }).finally(() => {
+            this.pendingLoads.delete(capturedLayerId)
           })
+          this.pendingLoads.set(layer.id, loadPromise)
           return
         }
         // Texture already loaded — update transforms in place
@@ -212,13 +233,29 @@ export class PixiRenderer implements RendererAdapter {
 
   async exportPng(): Promise<Blob> {
     if (!this.app) throw new Error('Renderer not initialised')
-    const base64 = await this.app.renderer.extract.base64({
-      target: this.app.stage,
-      format: 'png',
-    })
-    const [, data] = base64.split(',')
-    const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0))
-    return new Blob([bytes], { type: 'image/png' })
+    // Render synchronously, then immediately copy the WebGL canvas to a 2D
+    // canvas before yielding to the event loop. The WebGL backbuffer is cleared
+    // by the compositor on the next frame swap, so toBlob() on the WebGL canvas
+    // directly (with an async callback) can read a blank buffer. The 2D canvas
+    // copy is not subject to that clearing and is safe to read asynchronously.
+    this.app.renderer.render(this.app.stage)
+    const src = this.app.canvas as HTMLCanvasElement
+    const copy = document.createElement('canvas')
+    copy.width = src.width
+    copy.height = src.height
+    copy.getContext('2d')!.drawImage(src, 0, 0)
+    return new Promise<Blob>((resolve, reject) =>
+      copy.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png')
+    )
+  }
+
+  async flushPendingLoads(): Promise<void> {
+    if (this.pendingLoads.size === 0) return
+    await Promise.all([...this.pendingLoads.values()])
+  }
+
+  async preWarmTextures(urls: string[]): Promise<void> {
+    await Promise.all(urls.map(url => Assets.load(url)))
   }
 
   destroy(): void {
@@ -228,6 +265,7 @@ export class PixiRenderer implements RendererAdapter {
     }
     this.layerGraphics.clear()
     this.layerUrls.clear()
+    this.pendingLoads.clear()
     this.displacementSprite?.destroy()
     this.displacementSprite = null
     this.layersContainer = null  // app.destroy(true) handles actual cleanup

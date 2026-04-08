@@ -1,5 +1,5 @@
 // app/texture-playground/lib/export.ts
-import type { Project, RendererAdapter } from './types'
+import type { Project, RendererAdapter, MidgroundLayer } from './types'
 import { resolveFrame } from './resolve'
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -9,6 +9,20 @@ function downloadBlob(blob: Blob, filename: string) {
   a.download = filename
   a.click()
   URL.revokeObjectURL(url)
+}
+
+// Collect unique midground src URLs across all frames so they can be
+// pre-warmed into the Assets cache before the export loop starts.
+function collectMidgroundUrls(project: Project): string[] {
+  const seen = new Set<string>()
+  for (const frame of project.frames) {
+    for (const layer of resolveFrame(frame).layers) {
+      if (layer.kind === 'midground' && (layer as MidgroundLayer).src) {
+        seen.add((layer as MidgroundLayer).src as string)
+      }
+    }
+  }
+  return [...seen]
 }
 
 // ── Fast preview export (MediaRecorder) ──────────────────────────────────────
@@ -23,9 +37,10 @@ export async function exportWebMFast(
   const chunks: Blob[] = []
   recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data) }
 
+  await adapter.preWarmTextures(collectMidgroundUrls(project))
   recorder.start()
 
-  // Play exactly one full cycle
+  // Play exactly one full cycle — textures are pre-warmed so renderFrame is fully sync
   for (const frame of project.frames) {
     const snapshot = resolveFrame(frame)
     adapter.renderFrame(snapshot)
@@ -58,6 +73,8 @@ export async function exportWebMDeterministic(
   })
   encoder.configure({ codec: 'vp09.00.10.08', width: outputSize, height: outputSize, bitrate: 4_000_000 })
 
+  await adapter.preWarmTextures(collectMidgroundUrls(project))
+
   let timestampUs = 0
   const frameDurationUs = (1 / fps) * 1_000_000
 
@@ -65,8 +82,6 @@ export async function exportWebMDeterministic(
     const snapshot = resolveFrame(frame)
     adapter.renderFrame(snapshot)
 
-    // Extract via Pixi's render target — safe across await boundaries, unlike
-    // reading the WebGL display buffer which is cleared after each frame swap.
     const blob = await adapter.exportPng()
     const bitmap = await createImageBitmap(blob)
 
@@ -105,7 +120,11 @@ export async function exportMp4(
     output: (chunk, meta) => muxer.addVideoChunk(chunk, meta ?? undefined),
     error: (e) => { throw e },
   })
-  encoder.configure({ codec: 'avc1.42001f', width: outputSize, height: outputSize, bitrate: 4_000_000 })
+  // avc1.640034 = H.264 High Profile Level 5.2 — supports up to 9.4M px/frame (covers 2048×2048)
+  // avc1.42001f (Baseline 3.1) silently fails above 1024×1024
+  encoder.configure({ codec: 'avc1.640034', width: outputSize, height: outputSize, bitrate: 8_000_000 })
+
+  await adapter.preWarmTextures(collectMidgroundUrls(project))
 
   let timestampUs = 0
   const frameDurationUs = (1 / fps) * 1_000_000
@@ -113,6 +132,7 @@ export async function exportMp4(
   for (const frame of frames) {
     const snapshot = resolveFrame(frame)
     adapter.renderFrame(snapshot)
+
     const blob = await adapter.exportPng()
     const bitmap = await createImageBitmap(blob)
 
@@ -136,4 +156,20 @@ export async function exportMp4(
 export async function exportFramePng(adapter: RendererAdapter): Promise<void> {
   const blob = await adapter.exportPng()
   downloadBlob(blob, 'texture-frame.png')
+}
+
+// ── PNG sequence export ───────────────────────────────────────────────────────
+
+export async function exportPngSequence(
+  adapter: RendererAdapter,
+  project: Project,
+): Promise<void> {
+  await adapter.preWarmTextures(collectMidgroundUrls(project))
+  for (let i = 0; i < project.frames.length; i++) {
+    adapter.renderFrame(resolveFrame(project.frames[i]))
+    const blob = await adapter.exportPng()
+    downloadBlob(blob, `frame-${String(i + 1).padStart(3, '0')}.png`)
+    // Small pause between downloads so the browser doesn't throttle them
+    if (i < project.frames.length - 1) await new Promise(r => setTimeout(r, 250))
+  }
 }

@@ -1,5 +1,5 @@
-import TexturePlaygroundClient from './texture-playground/TexturePlaygroundClient'
+import ClientEntry from './texture-playground/ClientEntry'
 
 export default function Home() {
-  return <TexturePlaygroundClient />
+  return <ClientEntry />
 }

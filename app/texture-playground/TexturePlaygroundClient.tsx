@@ -6,25 +6,50 @@ import CanvasPreview from './components/CanvasPreview'
 import LeftPanel from './components/LeftPanel'
 import TopBar from './components/TopBar'
 import Timeline from './components/Timeline'
+import PresetBar from './components/PresetBar'
 import { resolveFrame } from './lib/resolve'
 import { usePlayback } from './lib/playback'
-import { exportWebMDeterministic, exportFramePng, exportMp4 } from './lib/export'
+import { exportWebMDeterministic, exportFramePng, exportMp4, exportPngSequence } from './lib/export'
 import { useHistory } from './lib/useHistory'
 import { serializeProject, deserializeProject } from './lib/serialize'
 
-const DEFAULT_LAYERS: Layer[] = [
-  { id: 'bg',  kind: 'background',  color: '#ff92e0' },
-  { id: 'mid', kind: 'midground',   src: null, label: '', opacity: 1, scale: 1, x: 0, y: 0 },
-  { id: 'adj', kind: 'adjustment',  filters: [] },
+const COMPOSITIONS: CompositionType[] = [
+  'dot-grid', 'regular-grid', 'variable-grid', 'linear', 'layered', 'checkered',
 ]
 
-const DEFAULT_PROJECT: Project = {
-  frames: [
-    { id: 'f1', layers: DEFAULT_LAYERS, durationFrames: 5 },
-  ],
-  outputSize: 1024,
-  fps: 30,
-  activeFrameId: 'f1',
+const RANDOM_FILTERS: FilterEntry[] = [
+  { type: 'noise',        enabled: true, intensity: 0.35, seed: 0, grainSize: 1 },
+  { type: 'rgbsplit',     enabled: true, amount: 6 },
+  { type: 'displacement', enabled: true, scale: 30 },
+  { type: 'glow',         enabled: true, distance: 10, strength: 2, color: '#b2c248' },
+]
+
+function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)] }
+
+function makeDefaultProject(): Project {
+  const composition = pick(COMPOSITIONS)
+  const filterEntry: FilterEntry = { ...pick(RANDOM_FILTERS) }
+  if (filterEntry.type === 'noise') filterEntry.seed = Math.random()
+
+  const gridLayer: GridLayer = {
+    id: nanoid(6), kind: 'grid', composition,
+    spacing: 20, thickness: 1, dotSize: 3, opacity: 1, scale: 1,
+    color: '#1e1e1e',
+  }
+
+  const layers: Layer[] = [
+    { id: 'bg',  kind: 'background', color: '#ff92e0' },
+    { id: 'mid', kind: 'midground',  src: null, label: '', opacity: 1, scale: 1, x: 0, y: 0 },
+    gridLayer,
+    { id: 'adj', kind: 'adjustment', filters: [filterEntry] },
+  ]
+
+  return {
+    frames: [{ id: 'f1', layers, durationFrames: 10 }],
+    outputSize: 1024,
+    fps: 24,
+    activeFrameId: 'f1',
+  }
 }
 
 function loadInitialProject(): Project {
@@ -32,7 +57,7 @@ function loadInitialProject(): Project {
     const raw = localStorage.getItem('texture-tool:autosave')
     if (raw) return deserializeProject(JSON.parse(raw))
   } catch { /* ignore */ }
-  return DEFAULT_PROJECT
+  return makeDefaultProject()
 }
 
 export default function TexturePlaygroundClient() {
@@ -182,7 +207,7 @@ export default function TexturePlaygroundClient() {
 
   function handleAddToTimeline() {
     setProject(p => {
-      if (p.frames.length >= 5) return p
+      if (p.frames.length >= 8) return p
       const currentFrame = p.frames.find(f => f.id === p.activeFrameId) ?? p.frames[0]
       const newFrame: Frame = {
         id: nanoid(6),
@@ -250,57 +275,20 @@ export default function TexturePlaygroundClient() {
     }
   }
 
-  const SHUFFLE_COLOURS = ['#444625', '#788d16', '#b2c349', '#e5eacd', '#ee9212', '#4791e2', '#ff92e0', '#a291ce']
-  const SHUFFLE_COMPOSITIONS: CompositionType[] = ['dot-grid', 'regular-grid', 'variable-grid', 'linear', 'layered', 'checkered']
-  const MIDGROUND_SRCS = Array.from({ length: 9 }, (_, i) => `/textures/midground/${i + 1}.png`)
-
-  function rnd(min: number, max: number) { return Math.random() * (max - min) + min }
-  function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)] }
-
-  function handleShuffle() {
-    setProject(p => {
-      const activeFrame = p.frames.find(f => f.id === p.activeFrameId) ?? p.frames[0]
-      const newLayers = activeFrame.layers.map((layer): Layer => {
-        if (layer.kind === 'background') return { ...layer, color: pick(SHUFFLE_COLOURS) }
-        if (layer.kind === 'grid') return {
-          ...layer,
-          composition: pick(SHUFFLE_COMPOSITIONS),
-          spacing: Math.round(rnd(8, 80)),
-          thickness: Math.round(rnd(0.5, 6) * 2) / 2,
-          dotSize: Math.round(rnd(1, 12) * 2) / 2,
-          opacity: Math.round(rnd(0.3, 1) * 100) / 100,
-          scale: Math.round(rnd(0.8, 2) * 100) / 100,
-        }
-        if (layer.kind === 'midground') return {
-          ...layer,
-          src: pick(MIDGROUND_SRCS),
-          label: String(MIDGROUND_SRCS.indexOf(pick(MIDGROUND_SRCS)) + 1),
-          opacity: Math.round(rnd(0.4, 1) * 100) / 100,
-          scale: Math.round(rnd(0.9, 1.5) * 100) / 100,
-          x: Math.round(rnd(-100, 100)),
-          y: Math.round(rnd(-100, 100)),
-        }
-        if (layer.kind === 'adjustment') return {
-          ...layer,
-          filters: layer.filters.map(fe => {
-            if (fe.type === 'noise') return { ...fe, intensity: Math.round(rnd(0.1, 0.8) * 10) / 10, seed: Math.random() }
-            if (fe.type === 'blur') return { ...fe, strength: Math.round(rnd(1, 10)) }
-            if (fe.type === 'pixelate') return { ...fe, size: Math.round(rnd(2, 20)) }
-            if (fe.type === 'displacement') return { ...fe, scale: Math.round(rnd(5, 80)) }
-            if (fe.type === 'rgbsplit') return { ...fe, amount: Math.round(rnd(1, 15)) }
-            return fe
-          }),
-        }
-        return layer
-      })
-      return {
-        ...p,
-        frames: p.frames.map(f =>
-          f.id !== p.activeFrameId ? f : { ...f, layers: newLayers }
-        ),
-      }
-    })
+  async function handleExportPngSequence() {
+    if (!adapterRef.current) return
+    setExporting(true)
+    try {
+      await exportPngSequence(adapterRef.current, project)
+    } finally {
+      setExporting(false)
+    }
   }
+
+  // The canvas and timeline share the same CSS-computed size so they align:
+  // width = min(canvas-area-width, available-height) using CSS min()
+  // Left panel is 280px; timeline row is 88px; top padding is 20px
+  const S = 'min(calc(100vw - 280px - 48px), calc(100vh - 88px - 40px))'
 
   return (
     <div
@@ -316,43 +304,75 @@ export default function TexturePlaygroundClient() {
         outputSize={project.outputSize}
         onLayerChange={handleLayerChange}
         onAddGridLayer={() => handleAddGridLayer('dot-grid')}
+        onDeleteLayer={handleDeleteLayer}
         onAddFilter={handleAddFilter}
         onFilterChange={handleFilterChange}
         onRemoveFilter={handleRemoveFilter}
-        project={project}
-        onLoadPreset={(p) => setProject(p)}
       />
 
-      {/* Canvas area — TopBar and Timeline float inside this */}
-      <div style={{ flex: 1, position: 'relative' }}>
-        <CanvasPreview
-          snapshot={snapshot}
-          outputSize={project.outputSize}
-          onAdapterReady={(a) => { adapterRef.current = a; setAdapter(a) }}
-        />
+      {/* Canvas area — grid: row1=canvas, row2=timeline */}
+      <div style={{
+        flex: 1,
+        display: 'grid',
+        gridTemplateRows: '1fr 88px',
+        alignItems: 'center',
+        justifyItems: 'center',
+        padding: '20px 24px 0',
+        position: 'relative',
+      }}>
+        {/* Row 1: canvas square */}
+        <div style={{
+          width: S, height: S,
+          borderRadius: 28,
+          overflow: 'hidden',
+          flexShrink: 0,
+          position: 'relative',
+        }}>
+          <CanvasPreview
+            snapshot={snapshot}
+            outputSize={project.outputSize}
+            onAdapterReady={(a) => { adapterRef.current = a; setAdapter(a) }}
+          />
+        </div>
+
+        {/* Row 2: timeline (same width S) */}
+        <div style={{ width: S, height: '100%' }}>
+          <Timeline
+            frames={project.frames}
+            activeFrameId={project.activeFrameId}
+            fps={project.fps}
+            playing={playing}
+            onSelectFrame={(id) => setProject(p => ({ ...p, activeFrameId: id }))}
+            onDeleteFrame={handleDeleteFrame}
+            onDurationChange={handleDurationChange}
+            onFpsChange={(fps) => setProject(p => ({ ...p, fps }))}
+            onPlay={() => setPlaying(true)}
+            onStop={() => setPlaying(false)}
+            onAddFrame={handleAddToTimeline}
+            onReorderFrames={handleReorderFrames}
+          />
+        </div>
+
+        {/* TopBar floats top-right */}
         <TopBar
           outputSize={project.outputSize}
           onSizeChange={(s) => setProject(p => ({ ...p, outputSize: s }))}
           onExportFrame={handleExportFrame}
           onExportWebM={handleExportWebM}
           onExportMp4={handleExportMp4}
-          onShuffle={handleShuffle}
+          onExportPngSequence={handleExportPngSequence}
           exporting={exporting}
         />
-        <Timeline
-          frames={project.frames}
-          activeFrameId={project.activeFrameId}
-          fps={project.fps}
-          playing={playing}
-          onSelectFrame={(id) => setProject(p => ({ ...p, activeFrameId: id }))}
-          onDeleteFrame={handleDeleteFrame}
-          onDurationChange={handleDurationChange}
-          onFpsChange={(fps) => setProject(p => ({ ...p, fps }))}
-          onPlay={() => setPlaying(true)}
-          onStop={() => setPlaying(false)}
-          onAddFrame={handleAddToTimeline}
-          onReorderFrames={handleReorderFrames}
-        />
+
+        {/* PresetBar anchored bottom-left, overlays timeline's left spacer */}
+        <div style={{
+          position: 'absolute', bottom: 0, left: 24,
+          height: 88,
+          display: 'flex', alignItems: 'center',
+          zIndex: 10,
+        }}>
+          <PresetBar project={project} onLoad={(p) => setProject(p)} />
+        </div>
       </div>
     </div>
   )
