@@ -287,25 +287,21 @@ export default function TexturePlaygroundClient() {
   }
 
   return (
-    <div className="grid grid-cols-[378px_1fr] grid-rows-1 w-screen h-screen p-4 gap-2 bg-white overflow-hidden">
+    <div className="grid grid-cols-[378px_1fr] grid-rows-1 w-screen h-screen p-4 gap-2 bg-white">
 
-      {/* Left column — no bg, scrollable */}
-      <div className="flex flex-col h-full rounded-[28px] px-4">
-        {/* Layer rows — scrollable if content overflows */}
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          <LeftPanel
-            snapshot={snapshot}
-            outputSize={project.outputSize}
-            onLayerChange={handleLayerChange}
-            onAddGridLayer={() => handleAddGridLayer('dot-grid')}
-            onDeleteLayer={handleDeleteLayer}
-            onAddFilter={handleAddFilter}
-            onFilterChange={handleFilterChange}
-            onRemoveFilter={handleRemoveFilter}
-          />
-        </div>
-        {/* PresetBar always visible at bottom — self-start collapses width to content */}
-        <div className="py-4 flex-shrink-0 self-start">
+      {/* Left column */}
+      <div className="flex flex-col h-full">
+        <LeftPanel
+          snapshot={snapshot}
+          outputSize={project.outputSize}
+          onLayerChange={handleLayerChange}
+          onAddGridLayer={() => handleAddGridLayer('dot-grid')}
+          onDeleteLayer={handleDeleteLayer}
+          onAddFilter={handleAddFilter}
+          onFilterChange={handleFilterChange}
+          onRemoveFilter={handleRemoveFilter}
+        />
+        <div className="mt-auto self-start pb-4">
           <PresetBar project={project} onLoad={(p) => setProject(p)} />
         </div>
       </div>
